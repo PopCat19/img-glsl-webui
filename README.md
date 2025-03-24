@@ -12,3 +12,5 @@ It does its job, maybe.
 
 ### How to run?
 Download the html file and open it with your browser. There's GitHub Pages too, if you don't want to run locally.
+|
+You can also use [my glsl](https://github.com/PopCat19/img-glsl-webui/blob/main/cool-stuff.glsl) from this repo. (its indeed 96% LLM generated shader :3)
