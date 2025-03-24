@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLSL Image Shader</title>
+  <style>
+    body {
+      background-color: #222;
+      color: #eee;
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .col {
+      flex: 1;
+      min-width: 300px;
+    }
+    
+    canvas {
+      max-width: 100%;
+      background-color: #333;
+      border: 1px solid #444;
+      display: block; /* Fix for canvas bleed issue */
+    }
+    
+    .canvas-container {
+      max-width: 100%;
+      background-color: #333;
+      border: 1px solid #444;
+      position: relative;
+      overflow: hidden;
+      display: flex; /* Help center content */
+      justify-content: center;
+      align-items: center;
+    }
+    
+    textarea, input {
+      background-color: #333;
+      color: #eee;
+      border: 1px solid #555;
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      font-family: monospace;
+    }
+    
+    .code-editor {
+      height: 400px;
+      background-color: #333;
+      border: 1px solid #555;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .code-editor textarea {
+      width: 100%;
+      height: 100%;
+      resize: none;
+      border: none;
+      padding: 8px;
+      background-color: transparent;
+      color: #eee;
+      font-family: monospace;
+      line-height: 1.5;
+      tab-size: 2;
+    }
+    
+    button {
+      background-color: #444;
+      color: #eee;
+      border: none;
+      padding: 8px 16px;
+      cursor: pointer;
+      margin: 5px 0;
+    }
+    
+    button:hover {
+      background-color: #555;
+    }
+    
+    button.active {
+      background-color: #66a;
+    }
+    
+    .console {
+      background-color: #111;
+      color: #0f0;
+      padding: 10px;
+      font-family: monospace;
+      height: 150px;
+      overflow-y: auto;
+      margin-top: 10px;
+      white-space: pre-wrap;
+    }
+    
+    .transform-controls {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #333;
+      border-radius: 4px;
+    }
+    
+    .var-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+    
+    .var-name {
+      width: 150px;
+    }
+    
+    .var-input {
+      flex: 1;
+    }
+    
+    .save-slots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin: 10px 0;
+    }
+    
+    .save-slot {
+      background-color: #444;
+      padding: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      flex: 1;
+      min-width: 80px;
+      text-align: center;
+    }
+    
+    .save-slot:hover {
+      background-color: #555;
+    }
+    
+    .save-slot.active {
+      background-color: #66a;
+    }
+    
+    .timeline {
+      height: 50px;
+      background-color: #333;
+      border-radius: 4px;
+      margin: 10px 0;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid #555; /* Added border around timeline */
+    }
+    
+    .timeline-inner {
+      height: 100%;
+      position: relative;
+    }
+    
+    .timeline-marker {
+      position: absolute;
+      width: 2px;
+      height: 100%;
+      background-color: red;
+      top: 0;
+      cursor: ew-resize;
+    }
+    
+    .timeline-keyframe {
+      position: absolute;
+      width: 10px;
+      height: 20px;
+      background-color: gold;
+      top: 15px;
+      margin-left: -5px;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    
+    .export-controls {
+      background-color: #333;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    
+    .control-section {
+      background-color: #333;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    
+    .control-section h3 {
+      margin-top: 0;
+    }
+    
+    .warning {
+      background-color: rgba(255, 200, 0, 0.2);
+      color: #ffcc00;
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    
+    .color-preview {
+      width: 20px;
+      height: 20px;
+      border: 1px solid #555;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 5px;
+    }
+    
+    /* Fixed positioning for checkbox label */
+    .checkbox-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>GLSL Image Shader</h1>
+    
+    <div class="row">
+      <div class="col">
+        <h2>Input</h2>
+        <div>
+          <button id="loadImage">Load Image</button>
+          <input type="file" id="imageInput" accept="image/*" style="display: none;">
+        </div>
+        
+        <h3>Shader Code</h3>
+        <div>
+          <button id="loadShader">Load Shader</button>
+          <button id="saveCurrentSlot">Save Current Slot</button>
+          <button id="pauseTime">Pause Time</button>
+          <input type="file" id="shaderInput" accept=".glsl,.frag,.txt" style="display: none;">
+        </div>
+        
+        <div class="save-slots">
+          <div class="save-slot" data-slot="1">Slot 1</div>
+          <div class="save-slot" data-slot="2">Slot 2</div>
+          <div class="save-slot" data-slot="3">Slot 3</div>
+          <div class="save-slot" data-slot="4">Slot 4</div>
+          <div class="save-slot" data-slot="5">Slot 5</div>
+        </div>
+        
+        <div class="code-editor">
+          <textarea id="shaderCode" placeholder="Enter GLSL shader code here..."></textarea>
+        </div>
+        <button id="applyShader">Apply Shader</button>
+        
+        <div class="control-section">
+          <h3>Canvas Settings</h3>
+          <div class="var-row">
+            <span class="var-name">Background:</span>
+            <input type="text" id="canvasBackground" value="#000000" class="var-input" placeholder="Hex color e.g. #000000">
+            <div class="color-preview" id="bgColorPreview" style="background-color: #000000;"></div>
+            <button id="applyBackground">Apply</button>
+          </div>
+          <div class="var-row">
+            <span class="var-name">Zoom:</span>
+            <input type="range" id="zoomLevel" min="0.1" max="5" step="0.1" value="1" class="var-input">
+            <input type="number" id="zoomInput" value="1" min="0.1" max="5" step="0.1" style="width: 60px;">
+            <button id="resetZoom">Reset</button>
+            <span id="zoomValue">1x</span>
+          </div>
+        </div>
+        
+        <div class="transform-controls">
+          <h3>Transform</h3>
+          <div class="var-row">
+            <span class="var-name">Crop:</span>
+            <input type="number" id="cropX" placeholder="X" min="0" class="var-input">
+            <input type="number" id="cropY" placeholder="Y" min="0" class="var-input">
+            <input type="number" id="cropWidth" placeholder="Width" min="1" class="var-input">
+            <input type="number" id="cropHeight" placeholder="Height" min="1" class="var-input">
+          </div>
+          <div class="var-row">
+            <span class="var-name">Aspect Ratio:</span>
+            <input type="number" id="aspectW" placeholder="Width" min="1" value="16" class="var-input">
+            <span>:</span>
+            <input type="number" id="aspectH" placeholder="Height" min="1" value="9" class="var-input">
+            <button id="applyAspect">Apply</button>
+          </div>
+          <div class="var-row">
+            <span class="var-name">Rotation:</span>
+            <input type="number" id="rotationDegrees" value="0" min="0" max="359" step="1" class="var-input">
+            <button id="rotateLeft">←</button>
+            <button id="rotateRight">→</button>
+          </div>
+          <div class="var-row">
+            <button id="mirrorX">Mirror X</button>
+            <button id="mirrorY">Mirror Y</button>
+            <button id="resetTransform">Reset</button>
+          </div>
+        </div>
+        
+        <div class="control-section">
+          <h3>Animation</h3>
+          <div id="timeControlledWarning" class="warning" style="display: none;">
+            Time is controlled by keyframe animation
+          </div>
+          <div class="timeline">
+            <div class="timeline-inner">
+              <div class="timeline-marker" id="timelineMarker"></div>
+            </div>
+          </div>
+          <div class="var-row">
+            <button id="addKeyframe">Add Keyframe</button>
+            <button id="playAnimation">Play</button>
+            <button id="stopAnimation">Stop</button>
+            <button id="resetAnimation">Reset</button>
+          </div>
+          <div class="var-row">
+            <span class="var-name">Duration (sec):</span>
+            <input type="number" id="animationDuration" min="1" value="5" class="var-input">
+          </div>
+          <div class="var-row">
+            <span class="var-name">Speed:</span>
+            <input type="range" id="animationSpeed" min="-2" max="2" step="0.1" value="1" class="var-input">
+            <span id="speedValue">1x</span>
+          </div>
+          <div class="var-row">
+            <div class="checkbox-wrapper">
+              <input type="checkbox" id="loopAnimation">
+              <label for="loopAnimation">Loop Animation</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col">
+        <h2>Output</h2>
+        <div class="canvas-container" id="canvasContainer">
+          <canvas id="canvas"></canvas>
+        </div>
+        
+        <div class="control-section">
+          <h3>Export Image</h3>
+          <div class="var-row">
+            <button id="savePNG">Save as PNG</button>
+            <button id="saveJPG">Save as JPG</button>
+            <button id="exportCurrentFrame">Export Current Frame</button>
+          </div>
+        </div>
+        
+        <div class="export-controls">
+          <h3>Export Animation</h3>
+          <div class="var-row">
+            <span class="var-name">FPS:</span>
+            <input type="number" id="exportFps" min="1" max="60" value="30" class="var-input">
+          </div>
+          <div class="var-row">
+            <span class="var-name">Bitrate (Mbps):</span>
+            <input type="number" id="exportBitrate" min="1" max="50" value="5" class="var-input">
+          </div>
+          <div class="var-row">
+            <button id="exportGif">Export as GIF</button>
+            <button id="exportMp4">Export as MP4</button>
+          </div>
+        </div>
+        
+        <h3>Console</h3>
+        <div id="console" class="console"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="x-shader/x-fragment" id="defaultFragmentShader">
+precision mediump float;
+
+// Input texture coordinates
+varying vec2 v_texcoord;
+
+// Input texture
+uniform sampler2D tex;
+uniform float time;
+
+void main() {
+  vec4 color = texture2D(tex, v_texcoord);
+  gl_FragColor = color;
+}
+  </script>
+
+  <script type="x-shader/x-vertex" id="vertexShader">
+attribute vec2 a_position;
+attribute vec2 a_texcoord;
+
+varying vec2 v_texcoord;
+
+void main() {
+  gl_Position = vec4(a_position, 0.0, 1.0);
+  v_texcoord = a_texcoord;
+}
+  </script>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const canvasContainer = document.getElementById('canvasContainer');
+    const gl = canvas.getContext('webgl');
+    const consoleEl = document.getElementById('console');
+    const codeTextarea = document.getElementById('shaderCode');
+    const rotationInput = document.getElementById('rotationDegrees');
+    const speedSlider = document.getElementById('animationSpeed');
+    const speedValue = document.getElementById('speedValue');
+    const zoomSlider = document.getElementById('zoomLevel');
+    const zoomInput = document.getElementById('zoomInput');
+    const zoomValue = document.getElementById('zoomValue');
+    const bgColorInput = document.getElementById('canvasBackground');
+    const bgColorPreview = document.getElementById('bgColorPreview');
+    const timeControlledWarning = document.getElementById('timeControlledWarning');
+    
+    let image = null;
+    let imageTexture = null;
+    let program = null;
+    let startTime = Date.now();
+    let pausedTime = null;
+    let animationFrame = null;
+    let positionBuffer = null;
+    let texCoordBuffer = null;
+    let timePaused = false;
+    
+    // Transformation state
+    let rotation = 0;
+    let mirrorXState = false;
+    let mirrorYState = false;
+    let cropState = { x: 0, y: 0, width: 0, height: 0 };
+    let zoomLevel = 1;
+    let canvasBackground = '#000000';
+    
+    // Animation state
+    let keyframes = [];
+    let animationPlaying = false;
+    let animationStartTime = null;
+    let currentKeyframeIndex = 0;
+    let animationSpeed = 1;
+    let loopAnimation = false;
+    let currentAnimationTime = 0;
+    
+    // Timeline control
+    const timelineEl = document.querySelector('.timeline');
+    const timelineInner = document.querySelector('.timeline-inner');
+    const timelineMarker = document.getElementById('timelineMarker');
+    
+    // Initialize save slots
+    const saveSlots = document.querySelectorAll('.save-slot');
+    let activeSlot = null;
+    
+    // Load from localStorage on startup
+    if (localStorage.getItem('glsl-shader')) {
+      codeTextarea.value = localStorage.getItem('glsl-shader');
+    }
+    
+    // Initialize save slots from localStorage
+    saveSlots.forEach(slot => {
+      const slotNum = slot.dataset.slot;
+      if (localStorage.getItem(`glsl-shader-slot-${slotNum}`)) {
+        slot.classList.add('active');
+      }
+      
+      slot.addEventListener('click', () => {
+        if (slot.classList.contains('active')) {
+          // Load from this slot
+          const slotContent = localStorage.getItem(`glsl-shader-slot-${slotNum}`);
+          if (slotContent) {
+            codeTextarea.value = slotContent;
+            logToConsole(`Loaded shader from slot ${slotNum}`);
+            
+            // Mark this slot as active (for use with Save Current Slot)
+            saveSlots.forEach(s => s.classList.remove('current'));
+            slot.classList.add('current');
+            activeSlot = slotNum;
+          }
+        } else {
+          // Save to this slot
+          localStorage.setItem(`glsl-shader-slot-${slotNum}`, codeTextarea.value);
+          slot.classList.add('active');
+          
+          // Mark this slot as active
+          saveSlots.forEach(s => s.classList.remove('current'));
+          slot.classList.add('current');
+          activeSlot = slotNum;
+          
+          logToConsole(`Saved shader to slot ${slotNum}`);
+        }
+      });
+      
+      // Right-click to clear slot
+      slot.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (confirm(`Clear save slot ${slotNum}?`)) {
+          localStorage.removeItem(`glsl-shader-slot-${slotNum}`);
+          slot.classList.remove('active');
+          slot.classList.remove('current');
+          if (activeSlot === slotNum) {
+            activeSlot = null;
+          }
+          logToConsole(`Cleared shader slot ${slotNum}`);
+        }
+      });
+    });
+    
+    // Zoom control - sync between slider and number input
+    zoomSlider.addEventListener('input', () => {
+      zoomLevel = parseFloat(zoomSlider.value);
+      zoomInput.value = zoomLevel;
+      zoomValue.textContent = `${zoomLevel.toFixed(1)}x`;
+      updateCanvasDisplay();
+    });
+    
+    zoomInput.addEventListener('input', () => {
+      zoomLevel = parseFloat(zoomInput.value);
+      zoomSlider.value = zoomLevel;
+      zoomValue.textContent = `${zoomLevel.toFixed(1)}x`;
+      updateCanvasDisplay();
+    });
+    
+    document.getElementById('resetZoom').addEventListener('click', () => {
+      zoomLevel = 1;
+      zoomSlider.value = 1;
+      zoomInput.value = 1;
+      zoomValue.textContent = "1x";
+      updateCanvasDisplay();
+    });
+    
+    // Animation speed control
+    speedSlider.addEventListener('input', () => {
+      animationSpeed = parseFloat(speedSlider.value);
+      speedValue.textContent = animationSpeed >= 0 ? 
+        `${animationSpeed.toFixed(1)}x` : 
+        `${Math.abs(animationSpeed).toFixed(1)}x (reverse)`;
+    });
+    
+    // Background color control
+    bgColorInput.addEventListener('input', () => {
+      const color = bgColorInput.value;
+      if (/^#[0-9A-F]{6}$/i.test(color)) {
+        bgColorPreview.style.backgroundColor = color;
+      }
+    });
+    
+    document.getElementById('applyBackground').addEventListener('click', () => {
+      const color = bgColorInput.value;
+      if (/^#[0-9A-F]{6}$/i.test(color)) {
+        canvasBackground = color;
+        updateCanvasDisplay();
+        logToConsole(`Canvas background set to ${color}`);
+      } else {
+        logToConsole('Invalid hex color format. Use #RRGGBB format.', 'error');
+      }
+    });
+    
+    // Animation loop control
+    document.getElementById('loopAnimation').addEventListener('change', (e) => {
+      loopAnimation = e.target.checked;
+    });
+    
+    // Connect UI events
+    document.getElementById('loadImage').addEventListener('click', () => {
+      document.getElementById('imageInput').click();
+    });
+    
+    document.getElementById('imageInput').addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const img = new Image();
+          img.onload = () => {
+            image = img;
+            canvas.width = img.width;
+            canvas.height = img.height;
+            
+            // Update crop controls with default values
+            cropState = { x: 0, y: 0, width: img.width, height: img.height };
+            document.getElementById('cropX').value = 0;
+            document.getElementById('cropY').value = 0;
+            document.getElementById('cropWidth').value = img.width;
+            document.getElementById('cropHeight').value = img.height;
+            
+            logToConsole(`Image loaded: ${file.name} (${img.width}x${img.height})`);
+            createImageTexture();
+            initBuffers();
+            updateCanvasDisplay();
+            startRendering();
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    document.getElementById('loadShader').addEventListener('click', () => {
+      document.getElementById('shaderInput').click();
+    });
+    
+    document.getElementById('shaderInput').addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          codeTextarea.value = evt.target.result;
+          logToConsole(`Shader loaded: ${file.name}`);
+        };
+        reader.readAsText(file);
+      }
+    });
+    
+    document.getElementById('saveCurrentSlot').addEventListener('click', () => {
+      if (activeSlot) {
+        localStorage.setItem(`glsl-shader-slot-${activeSlot}`, codeTextarea.value);
+        logToConsole(`Saved shader to slot ${activeSlot}`);
+      } else {
+        // No slot selected, save to generic storage
+        localStorage.setItem('glsl-shader', codeTextarea.value);
+        logToConsole('No slot selected. Shader saved to general storage.');
+      }
+    });
+    
+    document.getElementById('pauseTime').addEventListener('click', () => {
+      timePaused = !timePaused;
+      
+      if (timePaused) {
+        pausedTime = (Date.now() - startTime) / 1000.0;
+        document.getElementById('pauseTime').classList.add('active');
+        document.getElementById('pauseTime').textContent = 'Resume Time';
+      } else {
+        pausedTime = null;
+        startTime = Date.now();
+        document.getElementById('pauseTime').classList.remove('active');
+        document.getElementById('pauseTime').textContent = 'Pause Time';
+      }
+      
+      logToConsole(`Time ${timePaused ? 'paused' : 'resumed'}`);
+    });
+    
+    document.getElementById('applyShader').addEventListener('click', () => {
+      compileShader();
+      render(); // Force a render after applying shader
+    });
+    
+    document.getElementById('savePNG').addEventListener('click', () => {
+      saveImage('png');
+    });
+    
+    document.getElementById('saveJPG').addEventListener('click', () => {
+      saveImage('jpeg');
+    });
+    
+    document.getElementById('exportCurrentFrame').addEventListener('click', () => {
+      saveImage('png');
+    });
+    
+    // Export controls
+    document.getElementById('exportGif').addEventListener('click', () => {
+      exportAnimation('gif');
+    });
+    
+    document.getElementById('exportMp4').addEventListener('click', () => {
+      exportAnimation('mp4');
+    });
+    
+    // Transform controls
+    rotationInput.addEventListener('change', () => {
+      rotation = parseInt(rotationInput.value) || 0;
+      rotation = (rotation % 360 + 360) % 360; // Normalize to 0-359
+      rotationInput.value = rotation;
+      updateTransform();
+    });
+    
+    document.getElementById('rotateLeft').addEventListener('click', () => {
+      rotation = (rotation - 90) % 360;
+      if (rotation < 0) rotation += 360;
+      rotationInput.value = rotation;
+      updateTransform();
+    });
+    
+    document.getElementById('rotateRight').addEventListener('click', () => {
+      rotation = (rotation + 90) % 360;
+      rotationInput.value = rotation;
+      updateTransform();
+    });
+    
+    document.getElementById('mirrorX').addEventListener('click', () => {
+      mirrorXState = !mirrorXState;
+      updateTransform();
+    });
+    
+    document.getElementById('mirrorY').addEventListener('click', () => {
+      mirrorYState = !mirrorYState;
+      updateTransform();
+    });
+    
+    document.getElementById('resetTransform').addEventListener('click', () => {
+      rotation = 0;
+      rotationInput.value = 0;
+      mirrorXState = false;
+      mirrorYState = false;
+      if (image) {
+        cropState = { x: 0, y: 0, width: image.width, height: image.height };
+        document.getElementById('cropX').value = 0;
+        document.getElementById('cropY').value = 0;
+        document.getElementById('cropWidth').value = image.width;
+        document.getElementById('cropHeight').value = image.height;
+      }
+      updateTransform();
+    });
+    
+    document.getElementById('applyAspect').addEventListener('click', () => {
+      const aspectW = parseFloat(document.getElementById('aspectW').value) || 16;
+      const aspectH = parseFloat(document.getElementById('aspectH').value) || 9;
+      
+      if (image) {
+        const targetRatio = aspectW / aspectH;
+        const imgRatio = cropState.width / cropState.height;
+        
+        if (imgRatio > targetRatio) {
+          // Image is wider, crop width
+          const newWidth = cropState.height * targetRatio;
+          const deltaX = (cropState.width - newWidth) / 2;
+          cropState.x += deltaX;
+          cropState.width = newWidth;
+        } else {
+          // Image is taller, crop height
+          const newHeight = cropState.width / targetRatio;
+          const deltaY = (cropState.height - newHeight) / 2;
+          cropState.y += deltaY;
+          cropState.height = newHeight;
+        }
+        
+        document.getElementById('cropX').value = cropState.x;
+        document.getElementById('cropY').value = cropState.y;
+        document.getElementById('cropWidth').value = cropState.width;
+        document.getElementById('cropHeight').value = cropState.height;
+        
+        updateTransform();
+      }
+    });
+    
+    // Animation controls
+    document.getElementById('addKeyframe').addEventListener('click', () => {
+      const time = timePaused ? pausedTime : (Date.now() - startTime) / 1000.0;
+      
+      keyframes.push({
+        time: time,
+        shader: codeTextarea.value,
+        transform: {
+          rotation: rotation,
+          mirrorX: mirrorXState,
+          mirrorY: mirrorYState,
+          crop: {...cropState}
+        }
+      });
+      
+      keyframes.sort((a, b) => a.time - b.time);
+      
+      // Add keyframe marker to timeline
+      updateTimelineKeyframes();
+      
+      // Show timeline control warning
+      showTimelineWarning();
+      
+      logToConsole(`Added keyframe at time ${time.toFixed(2)}s`);
+    });
+    
+    document.getElementById('playAnimation').addEventListener('click', () => {
+      if (keyframes.length < 2) {
+        logToConsole('Need at least 2 keyframes to play animation', 'error');
+        return;
+      }
+      
+      animationPlaying = true;
+      
+      // If already at a certain point in the timeline, start from there
+      const currentTime = timePaused ? pausedTime : 0;
+      currentAnimationTime = currentTime;
+      
+      // Calculate animation start time based on current position
+      animationStartTime = Date.now() - (currentTime * 1000 / Math.abs(animationSpeed));
+      
+      // Set time to paused so animation controller takes over
+      timePaused = true;
+      document.getElementById('pauseTime').classList.add('active');
+      document.getElementById('pauseTime').textContent = 'Resume Time';
+      
+      // Show timeline control warning
+      showTimelineWarning();
+      
+      playAnimation();
+      
+      logToConsole(`Playing animation from ${currentTime.toFixed(2)}s`);
+    });
+    
+    document.getElementById('stopAnimation').addEventListener('click', () => {
+      animationPlaying = false;
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+      
+      // Don't stop rendering! Just stop animation
+      startRendering();
+      
+      logToConsole('Animation stopped');
+    });
+    
+    document.getElementById('resetAnimation').addEventListener('click', () => {
+      // Reset timeline position
+      timelineMarker.style.left = '0%';
+      
+      // Resume time
+      timePaused = false;
+      pausedTime = null;
+      startTime = Date.now();
+      document.getElementById('pauseTime').classList.remove('active');
+      document.getElementById('pauseTime').textContent = 'Pause Time';
+      
+      // Stop any running animation
+      animationPlaying = false;
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+      
+      // Hide timeline warning
+      hideTimelineWarning();
+      
+      // Resume normal rendering
+      startRendering();
+      
+      logToConsole('Animation reset, time resumed');
+    });
+    
+    function showTimelineWarning() {
+      timeControlledWarning.style.display = 'block';
+    }
+    
+    function hideTimelineWarning() {
+      timeControlledWarning.style.display = 'none';
+    }
+    
+    // Timeline dragging
+    let isDraggingMarker = false;
+    
+    timelineMarker.addEventListener('mousedown', (e) => {
+      isDraggingMarker = true;
+      document.addEventListener('mousemove', handleMarkerDrag);
+      document.addEventListener('mouseup', () => {
+        isDraggingMarker = false;
+        document.removeEventListener('mousemove', handleMarkerDrag);
+      });
+    });
+    
+    function handleMarkerDrag(e) {
+      if (!isDraggingMarker) return;
+      
+      const rect = timelineEl.getBoundingClientRect();
+      const position = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const normalizedPos = position / rect.width;
+      
+      const duration = parseFloat(document.getElementById('animationDuration').value) || 5;
+      const time = normalizedPos * duration;
+      
+      // Update marker position
+      timelineMarker.style.left = `${normalizedPos * 100}%`;
+      
+      // Set time for playback
+      pausedTime = time;
+      currentAnimationTime = time;
+      timePaused = true;
+      document.getElementById('pauseTime').classList.add('active');
+      document.getElementById('pauseTime').textContent = 'Resume Time';
+      
+      // Show timeline control warning
+      showTimelineWarning();
+      
+      // Update display based on keyframes
+      updateShaderForTime(time);
+      
+      render();
+    }
+    
+    function updateTimelineKeyframes() {
+      // Clear existing keyframe markers
+      const keyframeEls = document.querySelectorAll('.timeline-keyframe');
+      keyframeEls.forEach(el => el.remove());
+      
+      // Add new keyframe markers
+      const duration = parseFloat(document.getElementById('animationDuration').value) || 5;
+      
+      keyframes.forEach((keyframe, index) => {
+        const normalizedPos = keyframe.time / duration;
+        if (normalizedPos > 1) return; // Skip keyframes outside the timeline
+        
+        const keyframeEl = document.createElement('div');
+        keyframeEl.className = 'timeline-keyframe';
+        keyframeEl.style.left = `${normalizedPos * 100}%`;
+        keyframeEl.dataset.index = index;
+        keyframeEl.title = `Keyframe at ${keyframe.time.toFixed(2)}s`;
+        
+        // Add click handler
+        keyframeEl.addEventListener('click', (e) => {
+          const index = parseInt(e.target.dataset.index);
+          const keyframe = keyframes[index];
+          
+          // Seek to this keyframe
+          pausedTime = keyframe.time;
+          currentAnimationTime = keyframe.time;
+          timePaused = true;
+          document.getElementById('pauseTime').classList.add('active');
+          document.getElementById('pauseTime').textContent = 'Resume Time';
+          
+          // Show timeline control warning
+          showTimelineWarning();
+          
+          // Apply keyframe settings
+          codeTextarea.value = keyframe.shader;
+          rotation = keyframe.transform.rotation;
+          rotationInput.value = rotation;
+          mirrorXState = keyframe.transform.mirrorX;
+          mirrorYState = keyframe.transform.mirrorY;
+          cropState = {...keyframe.transform.crop};
+          
+          // Update crop input fields
+          document.getElementById('cropX').value = cropState.x;
+          document.getElementById('cropY').value = cropState.y;
+          document.getElementById('cropWidth').value = cropState.width;
+          document.getElementById('cropHeight').value = cropState.height;
+          
+          updateTransform();
+          compileShader();
+          render();
+          
+          // Update timeline marker
+          const duration = parseFloat(document.getElementById('animationDuration').value) || 5;
+          const normalizedPos = keyframe.time / duration;
+          timelineMarker.style.left = `${normalizedPos * 100}%`;
+        });
+        
+        // Right-click to delete
+        keyframeEl.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          if (confirm('Delete this keyframe?')) {
+            const index = parseInt(e.target.dataset.index);
+            keyframes.splice(index, 1);
+            updateTimelineKeyframes();
+            
+            // Hide timeline warning if no keyframes
+            if (keyframes.length === 0) {
+              hideTimelineWarning();
+            }
+          }
+        });
+        
+        timelineInner.appendChild(keyframeEl);
+      });
+    }
+    
+    function updateShaderForTime(time) {
+      if (keyframes.length < 2) return;
+      
+      // Find keyframes before and after current time
+      let prevKeyframe = keyframes[0];
+      let nextKeyframe = keyframes[keyframes.length - 1];
+      
+      for (let i = 0; i < keyframes.length; i++) {
+        if (keyframes[i].time <= time) {
+          prevKeyframe = keyframes[i];
+        }
+        if (keyframes[i].time > time && keyframes[i].time < nextKeyframe.time) {
+          nextKeyframe = keyframes[i];
+        }
+      }
+      
+      // If time is exactly on a keyframe, just use that keyframe
+      if (time === prevKeyframe.time) {
+        codeTextarea.value = prevKeyframe.shader;
+        rotation = prevKeyframe.transform.rotation;
+        rotationInput.value = rotation;
+        mirrorXState = prevKeyframe.transform.mirrorX;
+        mirrorYState = prevKeyframe.transform.mirrorY;
+        cropState = {...prevKeyframe.transform.crop};
+        
+        // Update crop input fields
+        document.getElementById('cropX').value = cropState.x;
+        document.getElementById('cropY').value = cropState.y;
+        document.getElementById('cropWidth').value = cropState.width;
+        document.getElementById('cropHeight').value = cropState.height;
+        
+        compileShader();
+        updateTransform();
+        return;
+      }
+      
+      // Otherwise, interpolate between keyframes
+      const t = (time - prevKeyframe.time) / (nextKeyframe.time - prevKeyframe.time);
+      
+      // For now, just use the previous keyframe's shader
+      codeTextarea.value = prevKeyframe.shader;
+      compileShader();
+      
+      // Interpolate transform properties
+      // For rotation, we need to handle the 0/360 boundary
+      const rotationDiff = ((nextKeyframe.transform.rotation - prevKeyframe.transform.rotation) + 180) % 360 - 180;
+      rotation = (prevKeyframe.transform.rotation + rotationDiff * t) % 360;
+      if (rotation < 0) rotation += 360;
+      rotationInput.value = Math.round(rotation);
+      
+      // For boolean properties, use the nearest keyframe
+      mirrorXState = t < 0.5 ? prevKeyframe.transform.mirrorX : nextKeyframe.transform.mirrorX;
+      mirrorYState = t < 0.5 ? prevKeyframe.transform.mirrorY : nextKeyframe.transform.mirrorY;
+      
+      // Interpolate crop values
+      cropState = {
+        x: prevKeyframe.transform.crop.x + (nextKeyframe.transform.crop.x - prevKeyframe.transform.crop.x) * t,
+        y: prevKeyframe.transform.crop.y + (nextKeyframe.transform.crop.y - prevKeyframe.transform.crop.y) * t,
+        width: prevKeyframe.transform.crop.width + (nextKeyframe.transform.crop.width - prevKeyframe.transform.crop.width) * t,
+        height: prevKeyframe.transform.crop.height + (nextKeyframe.transform.crop.height - prevKeyframe.transform.crop.height) * t
+      };
+      
+      // Update crop input fields
+      document.getElementById('cropX').value = cropState.x;
+      document.getElementById('cropY').value = cropState.y;
+      document.getElementById('cropWidth').value = cropState.width;
+      document.getElementById('cropHeight').value = cropState.height;
+      
+      updateTransform();
+    }
+    
+    function playAnimation() {
+      if (!animationPlaying) return;
+      
+      const duration = parseFloat(document.getElementById('animationDuration').value) || 5;
+      const elapsedMs = Date.now() - animationStartTime;
+      
+      // Apply animation speed and direction
+      if (animationSpeed >= 0) {
+        currentAnimationTime = (elapsedMs / 1000.0) * animationSpeed;
+      } else {
+        // Reverse playback
+        currentAnimationTime = duration - ((elapsedMs / 1000.0) * Math.abs(animationSpeed));
+      }
+      
+      // Handle looping
+      if (loopAnimation) {
+        currentAnimationTime = currentAnimationTime % duration;
+        if (currentAnimationTime < 0) currentAnimationTime += duration;
+      } else if ((animationSpeed >= 0 && currentAnimationTime > duration) || 
+                (animationSpeed < 0 && currentAnimationTime < 0)) {
+        // Animation complete
+        animationPlaying = false;
+        
+        // Always stop at a valid time
+        currentAnimationTime = animationSpeed >= 0 ? duration : 0;
+        
+        // Continue rendering but stop animation
+        startRendering();
+        updateShaderForTime(currentAnimationTime);
+        
+        // Update marker position
+        const normalizedPos = currentAnimationTime / duration;
+        timelineMarker.style.left = `${normalizedPos * 100}%`;
+        
+        pausedTime = currentAnimationTime;
+        return;
+      }
+      
+      // Update timeline marker
+      const normalizedPos = currentAnimationTime / duration;
+      timelineMarker.style.left = `${normalizedPos * 100}%`;
+      
+      // Update shader based on keyframes
+      pausedTime = currentAnimationTime;
+      updateShaderForTime(currentAnimationTime);
+      
+      // Render current frame
+      render();
+      
+      // Continue animation
+      animationFrame = requestAnimationFrame(playAnimation);
+    }
+    
+    // Monitor crop input changes
+    ['cropX', 'cropY', 'cropWidth', 'cropHeight'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => {
+        cropState.x = parseFloat(document.getElementById('cropX').value) || 0;
+        cropState.y = parseFloat(document.getElementById('cropY').value) || 0;
+        cropState.width = parseFloat(document.getElementById('cropWidth').value) || image?.width || 0;
+        cropState.height = parseFloat(document.getElementById('cropHeight').value) || image?.height || 0;
+        updateTransform();
+      });
+    });
+    
+    // WebGL setup
+    if (!gl) {
+      logToConsole('WebGL not supported!', 'error');
+    } else {
+      logToConsole('WebGL initialized successfully');
+      initWebGL();
+    }
+    
+    function initWebGL() {
+      // Create default shader
+      const vertexShader = createShader(gl.VERTEX_SHADER, document.getElementById('vertexShader').textContent);
+      const fragmentShader = createShader(gl.FRAGMENT_SHADER, document.getElementById('defaultFragmentShader').textContent);
+      program = createProgram(vertexShader, fragmentShader);
+      
+      initBuffers();
+    }
+    
+    function initBuffers() {
+      // Create a buffer for the position 
+      positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        -1, -1,
+         1, -1,
+        -1,  1,
+         1,  1
+      ]), gl.STATIC_DRAW);
+      
+      // Create a buffer for texture coordinates
+      texCoordBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        0, 1,
+        1, 1,
+        0, 0,
+        1, 0
+      ]), gl.STATIC_DRAW);
+    }
+    
+    function createShader(type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        const error = gl.getShaderInfoLog(shader);
+        logToConsole(`Error compiling shader: ${error}`, 'error');
+        gl.deleteShader(shader);
+        return null;
+      }
+      
+      return shader;
+    }
+    
+    function createProgram(vertexShader, fragmentShader) {
+      const prog = gl.createProgram();
+      gl.attachShader(prog, vertexShader);
+      gl.attachShader(prog, fragmentShader);
+      gl.linkProgram(prog);
+      
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        const error = gl.getProgramInfoLog(prog);
+        logToConsole(`Error linking program: ${error}`, 'error');
+        gl.deleteProgram(prog);
+        return null;
+      }
+      
+      return prog;
+    }
+    
+    function createImageTexture() {
+      if (!image) return;
+      
+      if (imageTexture) {
+        gl.deleteTexture(imageTexture);
+      }
+      
+      imageTexture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+      
+      // Set parameters
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      
+      // Upload the image
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      
+      // Update canvas dimensions
+      canvas.width = image.width;
+      canvas.height = image.height;
+      
+      // Update crop default to match image
+      cropState = { x: 0, y: 0, width: image.width, height: image.height };
+    }
+    
+    function compileShader() {
+      const fragmentSource = codeTextarea.value.trim();
+      if (!fragmentSource) {
+        logToConsole('Shader code is empty!', 'error');
+        return;
+      }
+      
+      // Get the vertex shader
+      const vertexShader = createShader(gl.VERTEX_SHADER, document.getElementById('vertexShader').textContent);
+      
+      // Create and compile the fragment shader
+      const fragmentShader = createShader(gl.FRAGMENT_SHADER, fragmentSource);
+      if (!fragmentShader) return;
+      
+      // Create and link the program
+      const newProgram = createProgram(vertexShader, fragmentShader);
+      if (!newProgram) return;
+      
+      // Use the new program
+      if (program) {
+        gl.deleteProgram(program);
+      }
+      program = newProgram;
+      gl.useProgram(program);
+      
+      logToConsole('Shader compiled successfully');
+      
+      // Reset time when changing shaders
+      startTime = Date.now();
+      pausedTime = null;
+      timePaused = false;
+      document.getElementById('pauseTime').classList.remove('active');
+      document.getElementById('pauseTime').textContent = 'Pause Time';
+    }
+    
+    function updateTransform() {
+      if (!image) return;
+      
+      // Update canvas dimensions based on rotation and crop
+      if (rotation === 90 || rotation === 270) {
+        canvas.width = cropState.height;
+        canvas.height = cropState.width;
+      } else {
+        canvas.width = cropState.width;
+        canvas.height = cropState.height;
+      }
+      
+      // Update texture coordinates for rotation and mirroring
+      let texCoords;
+      
+      // Handle arbitrary rotation angles by using different texture coordinates
+      // For simplicity, still handle 90 degree rotations specially
+      if (rotation % 90 === 0) {
+        // Base texture coordinates for 90 degree rotations
+        switch (rotation % 360) {
+          case 0:
+            texCoords = [0, 1, 1, 1, 0, 0, 1, 0];
+            break;
+          case 90:
+            texCoords = [0, 0, 0, 1, 1, 0, 1, 1];
+            break;
+          case 180:
+            texCoords = [1, 0, 0, 0, 1, 1, 0, 1];
+            break;
+          case 270:
+            texCoords = [1, 1, 1, 0, 0, 1, 0, 0];
+            break;
+        }
+      } else {
+        // For arbitrary angles, we'll use the default coordinates
+        // and compensate by adjusting the canvas display with CSS transforms
+        texCoords = [0, 1, 1, 1, 0, 0, 1, 0];
+      }
+      
+      // Apply mirroring
+      if (mirrorXState) {
+        for (let i = 0; i < texCoords.length; i += 2) {
+          texCoords[i] = 1 - texCoords[i];
+        }
+      }
+      
+      if (mirrorYState) {
+        for (let i = 1; i < texCoords.length; i += 2) {
+          texCoords[i] = 1 - texCoords[i];
+        }
+      }
+      
+      // Apply cropping by adjusting texture coordinates
+      if (image.width > 0 && image.height > 0) {
+        const xScale = cropState.width / image.width;
+        const yScale = cropState.height / image.height;
+        const xOffset = cropState.x / image.width;
+        const yOffset = cropState.y / image.height;
+        
+        for (let i = 0; i < texCoords.length; i += 2) {
+          // Scale and offset coordinates
+          texCoords[i] = texCoords[i] * xScale + xOffset;
+          texCoords[i+1] = texCoords[i+1] * yScale + yOffset;
+        }
+      }
+      
+      // Update the texture coordinate buffer
+      gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
+      
+      // Update canvas display with CSS transform for non-90-degree rotations
+      updateCanvasDisplay();
+      
+      render();
+      logToConsole(`Transform updated: rotation=${rotation}°, mirrorX=${mirrorXState}, mirrorY=${mirrorYState}, crop=(${cropState.x},${cropState.y},${cropState.width},${cropState.height})`);
+    }
+    
+    function updateCanvasDisplay() {
+      // Apply canvas background color
+      canvasContainer.style.backgroundColor = canvasBackground;
+      
+      // For non-90-degree rotations, calculate zoom level based on rotation
+      // to ensure the canvas stays fully visible
+      let adjustedZoom = zoomLevel;
+      
+      if (rotation % 90 !== 0) {
+        // Calculate the diagonal size of the image
+        const diagonal = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
+        
+        // Calculate an adjusted zoom to ensure the rotated image fits
+        const scaleFactor = Math.min(canvas.width, canvas.height) / diagonal;
+        adjustedZoom = zoomLevel * scaleFactor * 1.4; // Add some extra space
+      }
+      
+      // Apply CSS transforms for zoom and rotation
+      canvas.style.transformOrigin = 'center center';
+      canvas.style.transform = `rotate(${rotation}deg) scale(${adjustedZoom})`;
+      
+      // Ensure the canvas container is large enough to contain the rotated image
+      if (rotation % 90 !== 0) {
+        // Get the diagonal of the canvas for container size
+        const diagonal = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
+        canvasContainer.style.width = `${diagonal * zoomLevel}px`;
+        canvasContainer.style.height = `${diagonal * zoomLevel}px`;
+      } else {
+        // For 90-degree rotations, container can just match canvas size
+        canvasContainer.style.width = 'auto';
+        canvasContainer.style.height = 'auto';
+      }
+    }
+    
+    function startRendering() {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+      
+      function animate() {
+        render();
+        animationFrame = requestAnimationFrame(animate);
+      }
+      
+      animate();
+    }
+    
+    function stopRendering() {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+      }
+    }
+    
+    function render() {
+      if (!gl || !program || !imageTexture) return;
+      
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      
+      // Parse background color to RGB components for clear color
+      let r = 0, g = 0, b = 0, a = 0;
+      if (/^#[0-9A-F]{6}$/i.test(canvasBackground)) {
+        const hex = canvasBackground.substring(1);
+        r = parseInt(hex.substring(0, 2), 16) / 255;
+        g = parseInt(hex.substring(2, 4), 16) / 255;
+        b = parseInt(hex.substring(4, 6), 16) / 255;
+        a = 1.0; // Opaque background
+      }
+      
+      gl.clearColor(r, g, b, a);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      
+      gl.useProgram(program);
+      
+      // Bind position buffer
+      const positionLocation = gl.getAttribLocation(program, 'a_position');
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.enableVertexAttribArray(positionLocation);
+      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+      
+      // Bind texture coordinate buffer
+      const texCoordLocation = gl.getAttribLocation(program, 'a_texcoord');
+      gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+      gl.enableVertexAttribArray(texCoordLocation);
+      gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+      
+      // Set the texture
+      const texLocation = gl.getUniformLocation(program, 'tex');
+      gl.uniform1i(texLocation, 0);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+      
+      // Set the time uniform - respect paused state
+      const timeLocation = gl.getUniformLocation(program, 'time');
+      if (timeLocation) {
+        if (timePaused && pausedTime !== null) {
+          gl.uniform1f(timeLocation, pausedTime);
+        } else {
+          gl.uniform1f(timeLocation, (Date.now() - startTime) / 1000.0);
+        }
+      }
+      
+      // Draw
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    
+    function saveImage(type) {
+      if (!canvas) return;
+      
+      try {
+        // Make sure we have the latest render
+        render();
+        
+        // Force a synchronous render to ensure content is drawn
+        gl.finish();
+        
+        const mimeType = type === 'png' ? 'image/png' : 'image/jpeg';
+        const quality = type === 'png' ? undefined : 0.9;
+        
+        // Create a temporary canvas to ensure we get proper content
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Apply background color to temp canvas
+        tempCtx.fillStyle = canvasBackground;
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // Draw WebGL canvas to temp canvas
+        tempCtx.drawImage(canvas, 0, 0);
+        
+        // Get data URL from temp canvas
+        const imageData = tempCanvas.toDataURL(mimeType, quality);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.download = `shader_output.${type}`;
+        link.href = imageData;
+        link.click();
+        
+        logToConsole(`Image saved as ${type.toUpperCase()}`);
+      } catch (error) {
+        logToConsole(`Error saving image: ${error}`, 'error');
+      }
+    }
+    
+    function exportAnimation(type) {
+      if (!canvas || keyframes.length < 2) {
+        logToConsole('Need at least 2 keyframes to export animation', 'error');
+        return;
+      }
+      
+      const duration = parseFloat(document.getElementById('animationDuration').value) || 5;
+      const fps = parseInt(document.getElementById('exportFps').value) || 30;
+      const totalFrames = duration * fps;
+      const bitrate = parseInt(document.getElementById('exportBitrate').value) || 5;
+      
+      logToConsole(`Starting ${type} export: ${totalFrames} frames at ${fps} fps...`);
+      
+      // For GIF export
+      if (type === 'gif') {
+        try {
+          // Check if GIF.js is available
+          if (typeof GIF === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
+            script.onload = () => {
+              logToConsole('GIF.js loaded, starting export...');
+              renderAnimationFrames(type, fps, totalFrames);
+            };
+            document.head.appendChild(script);
+          } else {
+            renderAnimationFrames(type, fps, totalFrames);
+          }
+        } catch (error) {
+          logToConsole(`Error starting GIF export: ${error}`, 'error');
+        }
+      }
+      // For MP4 export (using MediaRecorder API)
+      else if (type === 'mp4') {
+        try {
+          // Record canvas as video stream
+          const stream = canvas.captureStream(fps);
+          const recorder = new MediaRecorder(stream, {
+            mimeType: 'video/webm',
+            videoBitsPerSecond: bitrate * 1000000 // Convert to bps
+          });
+          
+          const chunks = [];
+          recorder.ondataavailable = e => chunks.push(e.data);
+          recorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'shader_animation.webm';
+            link.click();
+            
+            logToConsole('Animation exported as MP4 (WebM format)');
+          };
+          
+          // Start recording and animation playback
+          recorder.start();
+          
+          // Set up animation to play from the beginning
+          animationPlaying = true;
+          currentAnimationTime = 0;
+          animationStartTime = Date.now();
+          
+          // Make sure timeline warning is visible
+          showTimelineWarning();
+          
+          // Play animation and stop recording when done
+          const recordingDuration = duration * 1000; // convert to ms
+          setTimeout(() => {
+            recorder.stop();
+            animationPlaying = false;
+          }, recordingDuration);
+          
+          playAnimation();
+          
+        } catch (error) {
+          logToConsole(`Error exporting MP4: ${error}`, 'error');
+        }
+      }
+    }
+    
+    function renderAnimationFrames(type, fps, totalFrames) {
+      // We'll implement a frame-by-frame renderer that captures each frame
+      
+      // For GIF
+      if (type === 'gif') {
+        const gif = new GIF({
+          workers: 4,
+          quality: 10,
+          width: canvas.width,
+          height: canvas.height,
+          background: canvasBackground.substring(1) // Remove # from hex
+        });
+        
+        let frameCount = 0;
+        const duration = parseFloat(document.getElementById('animationDuration').value) || 5;
+        const frameTime = 1000 / fps; // ms per frame
+        
+        function renderNextFrame() {
+          if (frameCount >= totalFrames) {
+            // Finish GIF
+            gif.render();
+            logToConsole('Finalizing GIF...');
+            return;
+          }
+          
+          // Calculate time for this frame
+          const time = (frameCount / totalFrames) * duration;
+          
+          // Update shader and render for this time
+          pausedTime = time;
+          updateShaderForTime(time);
+          render();
+          
+          // Add frame to GIF
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = canvas.width;
+          tempCanvas.height = canvas.height;
+          const tempCtx = tempCanvas.getContext('2d');
+          
+          // Apply background color to temp canvas
+          tempCtx.fillStyle = canvasBackground;
+          tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+          
+          // Draw WebGL canvas to temp canvas
+          tempCtx.drawImage(canvas, 0, 0);
+          
+          gif.addFrame(tempCanvas, { delay: frameTime, copy: true });
+          
+          // Update progress
+          frameCount++;
+          if (frameCount % Math.floor(totalFrames / 10) === 0) {
+            logToConsole(`GIF export: ${Math.floor((frameCount / totalFrames) * 100)}% complete`);
+          }
+          
+          // Process next frame
+          setTimeout(renderNextFrame, 0); // Use setTimeout to avoid blocking UI
+        }
+        
+        gif.on('finished', function(blob) {
+          // Create download link
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'shader_animation.gif';
+          link.click();
+          
+          logToConsole('GIF export complete!');
+        });
+        
+        // Start rendering frames
+        renderNextFrame();
+      }
+    }
+    
+    function logToConsole(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const formatted = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
+      
+      console[type === 'error' ? 'error' : 'log'](message);
+      
+      const el = document.getElementById('console');
+      el.innerHTML += formatted + '\n';
+      el.scrollTop = el.scrollHeight;
+    }
+    
+    // Start rendering by default
+    startRendering();
+  </script>
+</body>
+</html>

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLSL Image Shader</title>
+  <style>
+    body {
+      background-color: #222;
+      color: #eee;
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .col {
+      flex: 1;
+      min-width: 300px;
+    }
+    
+    canvas {
+      max-width: 100%;
+      background-color: #333;
+      border: 1px solid #444;
+    }
+    
+    textarea, input {
+      background-color: #333;
+      color: #eee;
+      border: 1px solid #555;
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    button {
+      background-color: #444;
+      color: #eee;
+      border: none;
+      padding: 8px 16px;
+      cursor: pointer;
+      margin: 5px 0;
+    }
+    
+    button:hover {
+      background-color: #555;
+    }
+    
+    .console {
+      background-color: #111;
+      color: #0f0;
+      padding: 10px;
+      font-family: monospace;
+      height: 150px;
+      overflow-y: auto;
+      margin-top: 10px;
+      white-space: pre-wrap;
+    }
+    
+    #variables {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .var-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .var-name {
+      width: 150px;
+    }
+    
+    .var-input {
+      flex: 1;
+    }
+    
+    .transform-controls {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #333;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>GLSL Image Shader</h1>
+    
+    <div class="row">
+      <div class="col">
+        <h2>Input</h2>
+        <div>
+          <button id="loadImage">Load Image</button>
+          <input type="file" id="imageInput" accept="image/*" style="display: none;">
+        </div>
+        
+        <h3>Shader Code</h3>
+        <div>
+          <button id="loadShader">Load Shader</button>
+          <input type="file" id="shaderInput" accept=".glsl,.frag,.txt" style="display: none;">
+        </div>
+        <textarea id="shaderCode" rows="20" placeholder="Enter GLSL shader code here..."></textarea>
+        <button id="applyShader">Apply Shader</button>
+        
+        <h3>Variables</h3>
+        <div id="variables"></div>
+        <button id="applyVariables">Apply Variables</button>
+        
+        <div class="transform-controls">
+          <h3>Transform</h3>
+          <div class="var-row">
+            <span class="var-name">Crop:</span>
+            <input type="number" id="cropX" placeholder="X" min="0" class="var-input">
+            <input type="number" id="cropY" placeholder="Y" min="0" class="var-input">
+            <input type="number" id="cropWidth" placeholder="Width" min="1" class="var-input">
+            <input type="number" id="cropHeight" placeholder="Height" min="1" class="var-input">
+          </div>
+          <div class="var-row">
+            <span class="var-name">Aspect Ratio:</span>
+            <input type="number" id="aspectW" placeholder="Width" min="1" value="16" class="var-input">
+            <span>:</span>
+            <input type="number" id="aspectH" placeholder="Height" min="1" value="9" class="var-input">
+            <button id="applyAspect">Apply</button>
+          </div>
+          <div class="var-row">
+            <button id="rotateLeft">Rotate Left</button>
+            <button id="rotateRight">Rotate Right</button>
+            <button id="mirrorX">Mirror X</button>
+            <button id="mirrorY">Mirror Y</button>
+            <button id="resetTransform">Reset</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col">
+        <h2>Output</h2>
+        <canvas id="canvas"></canvas>
+        <div class="row">
+          <button id="togglePreview">Toggle Preview</button>
+          <button id="savePNG">Save as PNG</button>
+          <button id="saveJPG">Save as JPG</button>
+        </div>
+        
+        <h3>Console</h3>
+        <div id="console" class="console"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="x-shader/x-fragment" id="defaultFragmentShader">
+precision mediump float;
+
+// Input texture coordinates
+varying vec2 v_texcoord;
+
+// Input texture
+uniform sampler2D tex;
+uniform float time;
+
+void main() {
+  vec4 color = texture2D(tex, v_texcoord);
+  gl_FragColor = color;
+}
+  </script>
+
+  <script type="x-shader/x-vertex" id="vertexShader">
+attribute vec2 a_position;
+attribute vec2 a_texcoord;
+
+varying vec2 v_texcoord;
+
+void main() {
+  gl_Position = vec4(a_position, 0.0, 1.0);
+  v_texcoord = a_texcoord;
+}
+  </script>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const gl = canvas.getContext('webgl');
+    const consoleEl = document.getElementById('console');
+    
+    let image = null;
+    let imageTexture = null;
+    let previewActive = true;
+    let program = null;
+    let startTime = Date.now();
+    let animationFrame = null;
+    let positionBuffer = null;
+    let texCoordBuffer = null;
+    
+    // Transformation state
+    let rotation = 0;
+    let mirrorXState = false;
+    let mirrorYState = false;
+    let cropState = { x: 0, y: 0, width: 0, height: 0 };
+    
+    // Customizable variables extracted from shader
+    let shaderVariables = {};
+    
+    // Connect UI events
+    document.getElementById('loadImage').addEventListener('click', () => {
+      document.getElementById('imageInput').click();
+    });
+    
+    document.getElementById('imageInput').addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const img = new Image();
+          img.onload = () => {
+            image = img;
+            canvas.width = img.width;
+            canvas.height = img.height;
+            
+            // Update crop controls with default values
+            cropState = { x: 0, y: 0, width: img.width, height: img.height };
+            document.getElementById('cropX').value = 0;
+            document.getElementById('cropY').value = 0;
+            document.getElementById('cropWidth').value = img.width;
+            document.getElementById('cropHeight').value = img.height;
+            
+            logToConsole(`Image loaded: ${file.name} (${img.width}x${img.height})`);
+            createImageTexture();
+            initBuffers();
+            startRendering();
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    document.getElementById('loadShader').addEventListener('click', () => {
+      document.getElementById('shaderInput').click();
+    });
+    
+    document.getElementById('shaderInput').addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          document.getElementById('shaderCode').value = evt.target.result;
+          logToConsole(`Shader loaded: ${file.name}`);
+          extractShaderVariables();
+        };
+        reader.readAsText(file);
+      }
+    });
+    
+    document.getElementById('applyShader').addEventListener('click', () => {
+      compileShader();
+      extractShaderVariables();
+      render(); // Force a render after applying shader
+    });
+    
+    document.getElementById('applyVariables').addEventListener('click', () => {
+      updateShaderVariables();
+      render(); // Force a render after updating variables
+    });
+    
+    document.getElementById('togglePreview').addEventListener('click', () => {
+      previewActive = !previewActive;
+      if (previewActive) {
+        startRendering();
+      } else {
+        stopRendering();
+        render(); // Ensure we have the latest frame
+      }
+      logToConsole(`Preview ${previewActive ? 'enabled' : 'disabled'}`);
+    });
+    
+    document.getElementById('savePNG').addEventListener('click', () => {
+      saveImage('png');
+    });
+    
+    document.getElementById('saveJPG').addEventListener('click', () => {
+      saveImage('jpeg');
+    });
+    
+    // Transform controls
+    document.getElementById('rotateLeft').addEventListener('click', () => {
+      rotation = (rotation - 90) % 360;
+      if (rotation < 0) rotation += 360;
+      updateTransform();
+    });
+    
+    document.getElementById('rotateRight').addEventListener('click', () => {
+      rotation = (rotation + 90) % 360;
+      updateTransform();
+    });
+    
+    document.getElementById('mirrorX').addEventListener('click', () => {
+      mirrorXState = !mirrorXState;
+      updateTransform();
+    });
+    
+    document.getElementById('mirrorY').addEventListener('click', () => {
+      mirrorYState = !mirrorYState;
+      updateTransform();
+    });
+    
+    document.getElementById('resetTransform').addEventListener('click', () => {
+      rotation = 0;
+      mirrorXState = false;
+      mirrorYState = false;
+      if (image) {
+        cropState = { x: 0, y: 0, width: image.width, height: image.height };
+        document.getElementById('cropX').value = 0;
+        document.getElementById('cropY').value = 0;
+        document.getElementById('cropWidth').value = image.width;
+        document.getElementById('cropHeight').value = image.height;
+      }
+      updateTransform();
+    });
+    
+    document.getElementById('applyAspect').addEventListener('click', () => {
+      const aspectW = parseFloat(document.getElementById('aspectW').value) || 16;
+      const aspectH = parseFloat(document.getElementById('aspectH').value) || 9;
+      
+      if (image) {
+        const targetRatio = aspectW / aspectH;
+        const imgRatio = cropState.width / cropState.height;
+        
+        if (imgRatio > targetRatio) {
+          // Image is wider, crop width
+          const newWidth = cropState.height * targetRatio;
+          const deltaX = (cropState.width - newWidth) / 2;
+          cropState.x += deltaX;
+          cropState.width = newWidth;
+        } else {
+          // Image is taller, crop height
+          const newHeight = cropState.width / targetRatio;
+          const deltaY = (cropState.height - newHeight) / 2;
+          cropState.y += deltaY;
+          cropState.height = newHeight;
+        }
+        
+        document.getElementById('cropX').value = cropState.x;
+        document.getElementById('cropY').value = cropState.y;
+        document.getElementById('cropWidth').value = cropState.width;
+        document.getElementById('cropHeight').value = cropState.height;
+        
+        updateTransform();
+      }
+    });
+    
+    // Monitor crop input changes
+    ['cropX', 'cropY', 'cropWidth', 'cropHeight'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => {
+        cropState.x = parseFloat(document.getElementById('cropX').value) || 0;
+        cropState.y = parseFloat(document.getElementById('cropY').value) || 0;
+        cropState.width = parseFloat(document.getElementById('cropWidth').value) || image?.width || 0;
+        cropState.height = parseFloat(document.getElementById('cropHeight').value) || image?.height || 0;
+        updateTransform();
+      });
+    });
+    
+    // WebGL setup
+    if (!gl) {
+      logToConsole('WebGL not supported!', 'error');
+    } else {
+      logToConsole('WebGL initialized successfully');
+      initWebGL();
+    }
+    
+    function initWebGL() {
+      // Create default shader
+      const vertexShader = createShader(gl.VERTEX_SHADER, document.getElementById('vertexShader').textContent);
+      const fragmentShader = createShader(gl.FRAGMENT_SHADER, document.getElementById('defaultFragmentShader').textContent);
+      program = createProgram(vertexShader, fragmentShader);
+      
+      initBuffers();
+      
+      // Extract default variables
+      extractShaderVariables();
+    }
+    
+    function initBuffers() {
+      // Create a buffer for the position 
+      positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        -1, -1,
+         1, -1,
+        -1,  1,
+         1,  1
+      ]), gl.STATIC_DRAW);
+      
+      // Create a buffer for texture coordinates
+      texCoordBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        0, 1,
+        1, 1,
+        0, 0,
+        1, 0
+      ]), gl.STATIC_DRAW);
+    }
+    
+    function createShader(type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        const error = gl.getShaderInfoLog(shader);
+        logToConsole(`Error compiling shader: ${error}`, 'error');
+        gl.deleteShader(shader);
+        return null;
+      }
+      
+      return shader;
+    }
+    
+    function createProgram(vertexShader, fragmentShader) {
+      const prog = gl.createProgram();
+      gl.attachShader(prog, vertexShader);
+      gl.attachShader(prog, fragmentShader);
+      gl.linkProgram(prog);
+      
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        const error = gl.getProgramInfoLog(prog);
+        logToConsole(`Error linking program: ${error}`, 'error');
+        gl.deleteProgram(prog);
+        return null;
+      }
+      
+      return prog;
+    }
+    
+    function createImageTexture() {
+      if (!image) return;
+      
+      if (imageTexture) {
+        gl.deleteTexture(imageTexture);
+      }
+      
+      imageTexture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+      
+      // Set parameters
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      
+      // Upload the image
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      
+      // Update canvas dimensions
+      canvas.width = image.width;
+      canvas.height = image.height;
+      
+      // Update crop default to match image
+      cropState = { x: 0, y: 0, width: image.width, height: image.height };
+    }
+    
+    function compileShader() {
+      const fragmentSource = document.getElementById('shaderCode').value.trim();
+      if (!fragmentSource) {
+        logToConsole('Shader code is empty!', 'error');
+        return;
+      }
+      
+      // Get the vertex shader
+      const vertexShader = createShader(gl.VERTEX_SHADER, document.getElementById('vertexShader').textContent);
+      
+      // Create and compile the fragment shader
+      const fragmentShader = createShader(gl.FRAGMENT_SHADER, fragmentSource);
+      if (!fragmentShader) return;
+      
+      // Create and link the program
+      const newProgram = createProgram(vertexShader, fragmentShader);
+      if (!newProgram) return;
+      
+      // Use the new program
+      if (program) {
+        gl.deleteProgram(program);
+      }
+      program = newProgram;
+      gl.useProgram(program);
+      
+      logToConsole('Shader compiled successfully');
+      
+      // Reset time when changing shaders
+      startTime = Date.now();
+    }
+    
+    function extractShaderVariables() {
+      const fragmentSource = document.getElementById('shaderCode').value || document.getElementById('defaultFragmentShader').textContent;
+      shaderVariables = {};
+      
+      // Match all uniform declarations
+      const uniformRegex = /uniform\s+(float|int|vec[234])\s+(\w+)/g;
+      let match;
+      
+      while ((match = uniformRegex.exec(fragmentSource)) !== null) {
+        const type = match[1];
+        const name = match[2];
+        
+        // Skip texture and time uniforms as they're handled separately
+        if (name === 'tex' || name === 'time') continue;
+        
+        // Find default value if present in a #define
+        const defineRegex = new RegExp(`#define\\s+${name}\\s+([\\d.]+)`, 'i');
+        const defineMatch = fragmentSource.match(defineRegex);
+        let defaultValue = defineMatch ? parseFloat(defineMatch[1]) : 0.0;
+        
+        shaderVariables[name] = {
+          type: type,
+          value: defaultValue
+        };
+      }
+      
+      // Update the variables UI
+      updateVariablesUI();
+    }
+    
+    function updateVariablesUI() {
+      const container = document.getElementById('variables');
+      container.innerHTML = '';
+      
+      Object.keys(shaderVariables).forEach(name => {
+        const variable = shaderVariables[name];
+        const row = document.createElement('div');
+        row.className = 'var-row';
+        
+        const label = document.createElement('span');
+        label.className = 'var-name';
+        label.textContent = name;
+        
+        const input = document.createElement('input');
+        input.className = 'var-input';
+        input.type = 'number';
+        input.step = 'any';
+        input.value = variable.value;
+        input.id = `var-${name}`;
+        
+        row.appendChild(label);
+        row.appendChild(input);
+        container.appendChild(row);
+      });
+      
+      if (Object.keys(shaderVariables).length === 0) {
+        container.innerHTML = '<p>No custom variables found in shader</p>';
+      }
+    }
+    
+    function updateShaderVariables() {
+      Object.keys(shaderVariables).forEach(name => {
+        const input = document.getElementById(`var-${name}`);
+        if (input) {
+          shaderVariables[name].value = parseFloat(input.value);
+        }
+      });
+      
+      logToConsole('Variables updated');
+    }
+    
+    function updateTransform() {
+      if (!image) return;
+      
+      // Update canvas dimensions based on rotation and crop
+      if (rotation === 90 || rotation === 270) {
+        canvas.width = cropState.height;
+        canvas.height = cropState.width;
+      } else {
+        canvas.width = cropState.width;
+        canvas.height = cropState.height;
+      }
+      
+      // Update texture coordinates for rotation and mirroring
+      let texCoords;
+      
+      // Base texture coordinates
+      switch (rotation) {
+        case 0:
+          texCoords = [0, 1, 1, 1, 0, 0, 1, 0];
+          break;
+        case 90:
+          texCoords = [0, 0, 0, 1, 1, 0, 1, 1];
+          break;
+        case 180:
+          texCoords = [1, 0, 0, 0, 1, 1, 0, 1];
+          break;
+        case 270:
+          texCoords = [1, 1, 1, 0, 0, 1, 0, 0];
+          break;
+      }
+      
+      // Apply mirroring
+      if (mirrorXState) {
+        for (let i = 0; i < texCoords.length; i += 2) {
+          texCoords[i] = 1 - texCoords[i];
+        }
+      }
+      
+      if (mirrorYState) {
+        for (let i = 1; i < texCoords.length; i += 2) {
+          texCoords[i] = 1 - texCoords[i];
+        }
+      }
+      
+      // Apply cropping by adjusting texture coordinates
+      if (image.width > 0 && image.height > 0) {
+        const xScale = cropState.width / image.width;
+        const yScale = cropState.height / image.height;
+        const xOffset = cropState.x / image.width;
+        const yOffset = cropState.y / image.height;
+        
+        for (let i = 0; i < texCoords.length; i += 2) {
+          // Scale and offset coordinates
+          texCoords[i] = texCoords[i] * xScale + xOffset;
+          texCoords[i+1] = texCoords[i+1] * yScale + yOffset;
+        }
+      }
+      
+      // Update the texture coordinate buffer
+      gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
+      
+      render();
+      logToConsole(`Transform updated: rotation=${rotation}°, mirrorX=${mirrorXState}, mirrorY=${mirrorYState}, crop=(${cropState.x},${cropState.y},${cropState.width},${cropState.height})`);
+    }
+    
+    function startRendering() {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+      
+      function animate() {
+        render();
+        animationFrame = requestAnimationFrame(animate);
+      }
+      
+      animate();
+    }
+    
+    function stopRendering() {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+      }
+    }
+    
+    function render() {
+      if (!gl || !program || !imageTexture) return;
+      
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      
+      gl.useProgram(program);
+      
+      // Bind position buffer
+      const positionLocation = gl.getAttribLocation(program, 'a_position');
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.enableVertexAttribArray(positionLocation);
+      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+      
+      // Bind texture coordinate buffer
+      const texCoordLocation = gl.getAttribLocation(program, 'a_texcoord');
+      gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+      gl.enableVertexAttribArray(texCoordLocation);
+      gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+      
+      // Set the texture
+      const texLocation = gl.getUniformLocation(program, 'tex');
+      gl.uniform1i(texLocation, 0);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+      
+      // Set the time uniform
+      const timeLocation = gl.getUniformLocation(program, 'time');
+      if (timeLocation) {
+        gl.uniform1f(timeLocation, (Date.now() - startTime) / 1000.0);
+      }
+      
+      // Set all custom variables
+      Object.keys(shaderVariables).forEach(name => {
+        const variable = shaderVariables[name];
+        const location = gl.getUniformLocation(program, name);
+        
+        if (location) {
+          if (variable.type === 'float' || variable.type === 'int') {
+            gl.uniform1f(location, variable.value);
+          } else if (variable.type === 'vec2') {
+            gl.uniform2f(location, variable.value, variable.value);
+          } else if (variable.type === 'vec3') {
+            gl.uniform3f(location, variable.value, variable.value, variable.value);
+          } else if (variable.type === 'vec4') {
+            gl.uniform4f(location, variable.value, variable.value, variable.value, variable.value);
+          }
+        }
+      });
+      
+      // Draw
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    
+    function saveImage(type) {
+      if (!canvas) return;
+      
+      try {
+        // Make sure we have the latest render
+        render();
+        
+        // Force a synchronous render to ensure content is drawn
+        gl.finish();
+        
+        const mimeType = type === 'png' ? 'image/png' : 'image/jpeg';
+        const quality = type === 'png' ? undefined : 0.9;
+        
+        // Create a temporary canvas to ensure we get proper content
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Draw WebGL canvas to temp canvas
+        tempCtx.drawImage(canvas, 0, 0);
+        
+        // Get data URL from temp canvas
+        const imageData = tempCanvas.toDataURL(mimeType, quality);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.download = `shader_output.${type}`;
+        link.href = imageData;
+        link.click();
+        
+        logToConsole(`Image saved as ${type.toUpperCase()}`);
+      } catch (error) {
+        logToConsole(`Error saving image: ${error}`, 'error');
+      }
+    }
+    
+    function logToConsole(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const formatted = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
+      
+      console[type === 'error' ? 'error' : 'log'](message);
+      
+      const el = document.getElementById('console');
+      el.innerHTML += formatted + '\n';
+      el.scrollTop = el.scrollHeight;
+    }
+  </script>
+</body>
+</html>
