@@ -11,6 +11,6 @@ I wanted to use mu shaders to export images larger than my monitor resolution (m
 It does its job, maybe.
 
 ### How to run?
-Download the html file and open it with your browser. There's GitHub Pages too, if you don't want to run locally.
+Download/copy the [latest html file from the revisions folder](https://github.com/PopCat19/img-glsl-webui/tree/main/revisions) (e.g. [glsl-webui-r2.html](https://github.com/PopCat19/img-glsl-webui/blob/main/revisions/glsl-webui-r2.html)) and open it with your browser. There's GitHub Pages too, if you don't want to run locally.
 |
 You can also use [my glsl](https://github.com/PopCat19/img-glsl-webui/blob/main/cool-stuff.glsl) from this repo. (its indeed 96% LLM generated shader :3)
