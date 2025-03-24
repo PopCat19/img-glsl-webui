@@ -5,7 +5,7 @@ GLSL on images via WebGL (LLM generated)
 You combine an image and glsl shader within the webui, you get to export them as png/jpg or webm afterwards.
 
 ### Why?
-I wanted to use mu shaders to export images larger than my monitor resolution (mainly used hyprshade with screenshots). I spent a tiny, tiny bit of hours with claude 3.7 low (shout out t3 chat for cheap service) and somehow got this. It works well enough for me (so far).
+I wanted to use my shaders to export images larger than my monitor resolution (mainly used hyprshade with screenshots). I spent a tiny, tiny bit of hours with claude 3.7 low (shout out t3 chat for cheap service) and somehow got this. It works well enough for me (so far).
 
 ### Is this slop?
 It does its job, maybe.
