@@ -12,6 +12,7 @@
                 --border: #ff99b21f;
                 --border-input: #ff99b21f;
                 --text: #ff99b2;
+                --btn-border-active: #ff99b2;
                 --btn: #ff99b21f;
                 --btn-hover: #ff99b252;
                 --btn-active: #ffc2d1;
@@ -30,6 +31,11 @@
                 --h2-color: #ffc2d1;
                 --h3-color: #ffc2d1;
                 --slider-color: var(--btn-hover);
+                button.border-active {
+                    background-color: transparent;
+                    border: 2px solid var(--btn-border-active);
+                    color: var(--btn-border-active);
+                }
             }
 
             /* Use CSS variables for colors/fonts */
@@ -313,24 +319,23 @@
                 <div class="col">
                     <h2>Input</h2>
                     <div>
-                        <button id="loadImage">Load Local Image</button>
-                        <input
-                            type="file"
-                            id="imageInput"
-                            accept="image/*"
-                            style="display: none"
-                        />
-                    </div>
-                    <div class="external-image">
-                        <input
+                        <!-- This is your local image button, now a CTA -->
+                        <button id="loadImage">Load Image</button>
+
+                        <!-- New Unload Image button, initially hidden -->
+                        <button id="unloadImage" style="display: none;">Unload Image</button>
+
+                        <!-- External image section: add class "border-active" to give it the border style initially -->
+                        <div class="external-image">
+                          <input
                             type="text"
                             id="externalImageUrl"
                             placeholder="Enter external image URL"
-                        />
-                        <button id="loadImageByUrl" type="button">
+                          />
+                          <button id="loadImageByUrl" type="button" class="border-active">
                             Load External Image
-                        </button>
-                    </div>
+                          </button>
+                        </div>
 
                     <!-- Moved Apply Shader button above the slot buttons -->
                     <h3>Shader Code</h3>
@@ -759,27 +764,56 @@
                     const img = new Image();
                     // Allow cross-origin loading if the server supports it.
                     img.crossOrigin = "Anonymous";
+                    // For example, inside your onload callback for image loading:
                     img.onload = () => {
-                        image = img;
-                        canvas.width = img.width;
-                        canvas.height = img.height;
+                      image = img;
+                      canvas.width = img.width;
+                      canvas.height = img.height;
 
-                        canvasState = {
-                            x: 0,
-                            y: 0,
-                            width: img.width,
-                            height: img.height,
-                        };
+                      canvasState = {
+                        x: 0,
+                        y: 0,
+                        width: img.width,
+                        height: img.height,
+                      };
 
-                        updateCanvasUI();
-                        log(`External image loaded from URL: ${url}`);
+                      updateCanvasUI();
+                      log("Image loaded from external URL");
 
-                        createImageTexture();
-                        initBuffers();
-                        updateCanvasDisplay();
-                        startRendering();
-                        saveToHistory();
+                      createImageTexture();
+                      initBuffers();
+                      updateCanvasDisplay();
+                      startRendering();
+                      saveToHistory();
+
+                      // Update buttons:
+                      // Change "Load Image" (formerly local image button) text to "Load New Image"
+                      document.getElementById("loadImage").textContent = "Load New Image";
+                      // Unhide the new "Unload Image" button
+                      document.getElementById("unloadImage").style.display = "inline-block";
+                      // Remove the 'border-active' style from the external button (if you want)
+                      document.getElementById("loadImageByUrl").classList.remove("border-active");
                     };
+                    document.getElementById("unloadImage").addEventListener("click", () => {
+                      // Clear the image and related state.
+                      image = null;
+                      // Optionally, clear the canvas or set it to a default state.
+                      canvas.width = 0;
+                      canvas.height = 0;
+                      // Log the action.
+                      log("Image unloaded.");
+
+                      // Revert button texts and styles:
+                      // Change "Load New Image" back to "Load Image"
+                      document.getElementById("loadImage").textContent = "Load Image";
+                      // Hide the "Unload Image" button.
+                      document.getElementById("unloadImage").style.display = "none";
+                      // Add back the border-active class to the external image button.
+                      document.getElementById("loadImageByUrl").classList.add("border-active");
+
+                      // If you have other state cleanups (e.g., resetting the texture), perform them here.
+                      // You may also want to re-render the UI to show an empty canvas.
+                    });
                     img.onerror = () => {
                         log(`Error loading image from URL: ${url}`, "error");
                     };
