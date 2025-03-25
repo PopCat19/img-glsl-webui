@@ -313,13 +313,23 @@
                 <div class="col">
                     <h2>Input</h2>
                     <div>
-                        <button id="loadImage">Load Image</button>
+                        <button id="loadImage">Load Local Image</button>
                         <input
                             type="file"
                             id="imageInput"
                             accept="image/*"
                             style="display: none"
                         />
+                    </div>
+                    <div class="external-image">
+                        <input
+                            type="text"
+                            id="externalImageUrl"
+                            placeholder="Enter external image URL"
+                        />
+                        <button id="loadImageByUrl" type="button">
+                            Load External Image
+                        </button>
                     </div>
 
                     <!-- Moved Apply Shader button above the slot buttons -->
@@ -677,6 +687,47 @@
             const maxHistory = 50;
             let history = [],
                 historyIndex = -1;
+
+            document
+                .getElementById("loadImageByUrl")
+                .addEventListener("click", () => {
+                    const url = document
+                        .getElementById("externalImageUrl")
+                        .value.trim();
+                    if (!url) {
+                        log("Please enter an external image URL.", "error");
+                        return;
+                    }
+
+                    const img = new Image();
+                    // Allow cross-origin loading if the server supports it.
+                    img.crossOrigin = "Anonymous";
+                    img.onload = () => {
+                        image = img;
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+
+                        canvasState = {
+                            x: 0,
+                            y: 0,
+                            width: img.width,
+                            height: img.height,
+                        };
+
+                        updateCanvasUI();
+                        log(`External image loaded from URL: ${url}`);
+
+                        createImageTexture();
+                        initBuffers();
+                        updateCanvasDisplay();
+                        startRendering();
+                        saveToHistory();
+                    };
+                    img.onerror = () => {
+                        log(`Error loading image from URL: ${url}`, "error");
+                    };
+                    img.src = url;
+                });
 
             // Zoom stuff
             function updateSliderAppearance() {
