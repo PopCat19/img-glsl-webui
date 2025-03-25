@@ -336,7 +336,7 @@
                     <h3>Shader Code</h3>
                     <div class="var-row">
                         <button id="updateShader" type="button">
-                            Update Shader
+                            Apply/Update Shader
                         </button>
                         <button id="toggleShader" type="button">
                             Toggle Shader
@@ -957,6 +957,7 @@
                     }
 
                     // Confirm the load action on a second left-click.
+                    // In the left-click handler for a slot...
                     if (slot.dataset.state === "confirm_load") {
                         if (timer) clearTimeout(timer);
                         const savedContent = localStorage.getItem(
@@ -966,6 +967,11 @@
                             codeTextarea.value = savedContent;
                         }
                         slot.textContent = "loaded!";
+                        // Remove active styling from all slots...
+                        saveSlots.forEach((s) => s.classList.remove("active"));
+                        // Mark this one as active.
+                        slot.classList.add("active");
+                        activeSlot = slotNum;
                         slot.dataset.state = "finish";
                         timer = setTimeout(resetSlot, 1000);
                         return;
@@ -976,7 +982,7 @@
                 slot.addEventListener("contextmenu", (e) => {
                     e.preventDefault();
 
-                    // If left-click confirmation is in progress, abort it.
+                    // If a left-click confirmation (save/load) is in progress, abort it.
                     if (
                         slot.dataset.state === "confirm_save" ||
                         slot.dataset.state === "confirm_load"
@@ -1002,6 +1008,12 @@
                         localStorage.removeItem(`glsl-shader-slot-${slotNum}`);
                         slot.textContent = "cleared!";
                         slot.dataset.state = "finish";
+                        // Remove the active visual state if this slot was active.
+                        slot.classList.remove("active");
+                        // Update the global active slot variable if necessary.
+                        if (activeSlot === slotNum) {
+                            activeSlot = null;
+                        }
                         timer = setTimeout(resetSlot, 1000);
                         return;
                     }
