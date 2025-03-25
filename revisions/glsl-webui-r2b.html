@@ -15,6 +15,7 @@
                 --btn: #ff99b21f;
                 --btn-hover: #ff99b252;
                 --btn-active: #ffc2d1;
+                --btn-active-text-color: #000000;
                 --btn-danger: #ff477552;
                 --console-text: #ff99b2;
                 --gap: 16px;
@@ -31,74 +32,38 @@
                 --slider-color: var(--btn-hover);
             }
 
+            /* Use CSS variables for colors/fonts */
             body {
                 background-color: var(--background);
                 color: var(--text);
                 font-family: var(--font-family);
-                margin: 0;
-                padding: 0;
-            }
-
-            /* Main container split into left/right panels */
-            .main-container {
-                display: flex;
-                height: 100vh;
-                overflow: hidden;
-            }
-
-            .left-panel {
-                width: 40%;
-                background-color: var(--bg-dark);
+                margin: var(--padding);
                 padding: var(--padding);
-                overflow-y: auto;
-                box-sizing: border-box;
-                border-right: var(--border-thickness) solid var(--border);
             }
 
-            .right-panel {
-                flex: 1;
+            /* Old layout: container, row, and col */
+            .container {
                 display: flex;
                 flex-direction: column;
-                padding: var(--padding);
-                overflow-y: auto;
-                box-sizing: border-box;
+                gap: var(--gap);
+            }
+            .row {
+                display: flex;
+                gap: 20px;
+                flex-wrap: wrap;
+            }
+            .col {
+                flex: 1;
+                min-width: 300px;
             }
 
-            /* Mobile: stack panels on top of each other */
-            @media (max-width: 768px) {
-                .main-container {
-                    flex-direction: column;
-                    height: auto;
-                }
-                .left-panel,
-                .right-panel {
-                    width: 100%;
-                    height: auto;
-                    border-right: none;
-                    border-bottom: var(--border-thickness) solid var(--border);
-                }
-            }
-
-            h1 {
-                color: var(--h1-color);
-            }
-
-            h2 {
-                color: var(--h2-color);
-            }
-
-            h3 {
-                color: var(--h3-color);
-                margin-top: 0;
-            }
-
+            /* Canvas and preview styles */
             canvas {
                 max-width: 100%;
                 background-color: var(--bg-panel);
                 border: var(--border-thickness) solid var(--border);
                 display: block;
             }
-
             .canvas-container {
                 max-width: 100%;
                 background-color: var(--bg-panel);
@@ -129,7 +94,6 @@
                 border-radius: var(--border-radius);
                 overflow: hidden;
             }
-
             .code-editor textarea {
                 width: 100%;
                 height: 100%;
@@ -139,6 +103,8 @@
                 background-color: transparent;
                 line-height: 1.5;
                 tab-size: 2;
+                font-family: monospace;
+                color: var(--text);
             }
 
             button {
@@ -151,25 +117,20 @@
                 border-radius: var(--border-radius);
                 transition: all 0.2s ease;
             }
-
             button:hover {
                 background-color: var(--btn-hover);
             }
-
             button:active {
                 transform: scale(0.98);
             }
-
             button.active {
                 background-color: var(--btn-active);
                 color: var(--btn-active-text-color);
             }
-
             button.small {
                 padding: 4px 8px;
                 font-size: 0.9em;
             }
-
             button.danger:hover {
                 background-color: var(--btn-danger);
                 color: var(--button-danger-text-color);
@@ -187,14 +148,18 @@
                 border-radius: var(--border-radius);
             }
 
-            .control-section,
+            .control-section {
+                background-color: var(--bg-panel);
+                padding: var(--padding);
+                border-radius: var(--border-radius);
+                margin: var(--margin) 0;
+            }
             .transform-controls {
                 margin: var(--margin) 0;
                 padding: var(--padding);
                 background-color: var(--bg-panel);
                 border-radius: var(--border-radius);
             }
-
             .var-row {
                 display: flex;
                 align-items: center;
@@ -202,12 +167,10 @@
                 margin-bottom: 10px;
                 flex-wrap: wrap;
             }
-
             .var-name {
                 width: 150px;
                 flex-shrink: 0;
             }
-
             .var-input {
                 flex: 1;
             }
@@ -218,7 +181,6 @@
                 gap: 5px;
                 margin: var(--margin) 0;
             }
-
             .save-slot {
                 background-color: var(--btn);
                 padding: 8px;
@@ -229,39 +191,16 @@
                 text-align: center;
                 transition: all 0.2s ease;
             }
-
             .save-slot:hover {
                 background-color: var(--btn-hover);
             }
-
             .save-slot:active {
                 transform: scale(0.98);
             }
-
             .save-slot.active {
                 background-color: var(--btn-active);
                 color: var(--background);
             }
-
-            .warning {
-                background-color: rgba(255, 200, 0, 0.2);
-                color: #ffcc00;
-                padding: 8px;
-                margin: 5px 0;
-                border-radius: var(--border-radius);
-                font-size: 0.9em;
-            }
-
-            .color-preview {
-                width: 20px;
-                height: 20px;
-                border: var(--border-thickness) solid var(--border-input);
-                display: inline-block;
-                vertical-align: middle;
-                margin-left: 5px;
-                border-radius: var(--border-radius);
-            }
-
             .checkbox-wrapper {
                 display: flex;
                 align-items: center;
@@ -269,15 +208,12 @@
                 white-space: nowrap;
                 margin-right: 15px;
             }
-
-            /* Updated rotation buttons for consistency */
             .rotation-presets {
                 display: flex;
                 gap: 5px;
                 margin-top: 5px;
                 flex: 1;
             }
-
             .rotation-preset {
                 flex: 1;
                 text-align: center;
@@ -289,20 +225,62 @@
                 border: var(--border-thickness) solid var(--border);
                 font-size: 1em;
             }
-
             .rotation-preset:hover {
                 background-color: var(--btn-hover);
             }
-
             .rotation-preset:active {
                 transform: scale(0.98);
             }
-
             .history-controls {
                 display: flex;
                 gap: 5px;
             }
+            .output-actions {
+                display: flex;
+                gap: 10px;
+                padding: var(--padding);
+                border: var(--border-thickness) solid var(--border);
+                border-radius: var(--border-radius);
+                margin: var(--margin) 0;
+            }
 
+            /* Slider styling */
+            input[type="range"] {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 100%;
+                height: 10px;
+                background: var(--slider-color);
+                border-radius: var(--border-radius);
+                outline: none;
+                opacity: 0.9;
+                transition: opacity 0.2s;
+                margin: 10px 0;
+            }
+            input[type="range"]:hover {
+                opacity: 1;
+            }
+            input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 20px;
+                height: 20px;
+                background: var(--btn-active);
+                border-radius: 50%;
+                cursor: pointer;
+                border: var(--border-thickness) solid var(--border);
+                margin-top: -5px;
+            }
+            input[type="range"]::-moz-range-thumb {
+                width: 20px;
+                height: 20px;
+                background: var(--btn-active);
+                border-radius: 50%;
+                cursor: pointer;
+                border: var(--border-thickness) solid var(--border);
+            }
+
+            /* Fullscreen preview styles */
             .fullscreen-preview {
                 position: fixed;
                 top: 0;
@@ -316,13 +294,11 @@
                 align-items: center;
                 cursor: pointer;
             }
-
             .fullscreen-preview canvas {
                 max-width: 95vw;
                 max-height: 95vh;
                 object-fit: contain;
             }
-
             .exit-fullscreen {
                 position: absolute;
                 top: 20px;
@@ -334,340 +310,297 @@
                 padding: 10px 15px;
                 cursor: pointer;
             }
-
             .exit-fullscreen:hover {
                 background: rgba(30, 30, 30, 0.8);
-            }
-
-            .output-actions {
-                display: flex;
-                gap: 10px;
-                padding: var(--padding);
-                border: var(--border-thickness) solid var(--border);
-                border-radius: var(--border-radius);
-                margin: var(--margin) 0;
-            }
-
-            /* Updated slider styling */
-            input[type="range"] {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 100%;
-                height: 10px;
-                background: var(--slider-color);
-                border-radius: var(--border-radius);
-                outline: none;
-                opacity: 0.9;
-                transition: opacity 0.2s;
-                margin: 10px 0;
-            }
-
-            input[type="range"]:hover {
-                opacity: 1;
-            }
-
-            input[type="range"]::-webkit-slider-thumb {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 20px;
-                height: 20px;
-                background: var(--btn-active);
-                border-radius: 50%;
-                cursor: pointer;
-                border: var(--border-thickness) solid var(--border);
-                margin-top: -5px;
-            }
-
-            input[type="range"]::-moz-range-thumb {
-                width: 20px;
-                height: 20px;
-                background: var(--btn-active);
-                border-radius: 50%;
-                cursor: pointer;
-                border: var(--border-thickness) solid var(--border);
-            }
-
-            /* Fix for narrow viewports in var-row */
-            .var-row {
-                gap: 10px;
-            }
-
-            .var-name {
-                min-width: 100px;
-                flex-shrink: 0;
-            }
-
-            .var-input {
-                flex: 1;
-                min-width: 150px;
             }
         </style>
     </head>
     <body>
-        <div class="main-container">
-            <!-- Left Panel: Input and Parameter Controls -->
-            <div class="left-panel">
-                <h1>GLSL Image Shader</h1>
-                <h2>Input</h2>
-                <div>
-                    <button id="loadImage">Load Image</button>
-                    <input
-                        type="file"
-                        id="imageInput"
-                        accept="image/*"
-                        style="display: none"
-                    />
-                </div>
-
-                <h3>Shader Code</h3>
-                <div class="var-row">
-                    <button id="loadShader">Load Shader</button>
-                    <button id="saveCurrentSlot">Save Current Slot</button>
-                    <button id="pauseTime">Pause Time</button>
-                    <div class="history-controls">
-                        <button id="undoButton" title="Undo">↩</button>
-                        <button id="redoButton" title="Redo">↪</button>
-                    </div>
-                    <input
-                        type="file"
-                        id="shaderInput"
-                        accept=".glsl,.frag,.txt"
-                        style="display: none"
-                    />
-                </div>
-
-                <div class="save-slots">
-                    <div class="save-slot" data-slot="1">Slot 1</div>
-                    <div class="save-slot" data-slot="2">Slot 2</div>
-                    <div class="save-slot" data-slot="3">Slot 3</div>
-                    <div class="save-slot" data-slot="4">Slot 4</div>
-                    <div class="save-slot" data-slot="5">Slot 5</div>
-                </div>
-
-                <div class="code-editor">
-                    <textarea
-                        id="shaderCode"
-                        placeholder="Enter GLSL shader code here..."
-                    ></textarea>
-                </div>
-                <button id="applyShader">Apply Shader</button>
-
-                <div class="control-section">
-                    <h3>Canvas Settings</h3>
-                    <div class="var-row">
-                        <span class="var-name">Background:</span>
+        <!-- Old layout: a container with a row of two columns -->
+        <div class="container">
+            <h1>GLSL Image Shader</h1>
+            <div class="row">
+                <div class="col">
+                    <h2>Input</h2>
+                    <div>
+                        <button id="loadImage">Load Image</button>
                         <input
-                            type="text"
-                            id="canvasBackground"
-                            value="#000000"
-                            class="var-input"
-                            placeholder="Hex color e.g. #000000"
+                            type="file"
+                            id="imageInput"
+                            accept="image/*"
+                            style="display: none"
                         />
-                        <div
-                            class="color-preview"
-                            id="bgColorPreview"
-                            style="background-color: #000000"
-                        ></div>
-                        <button id="applyBackground">Apply</button>
                     </div>
+
+                    <h3>Shader Code</h3>
                     <div class="var-row">
-                        <div class="checkbox-wrapper">
-                            <input type="checkbox" id="transparentCanvas" />
-                            <label for="transparentCanvas"
-                                >Transparent Canvas</label
-                            >
+                        <button id="loadShader">Load Shader</button>
+                        <button id="saveCurrentSlot">Save Current Slot</button>
+                        <button id="pauseTime">Pause Time</button>
+                        <div class="history-controls">
+                            <button id="undoButton" title="Undo">↩</button>
+                            <button id="redoButton" title="Redo">↪</button>
                         </div>
-                    </div>
-                    <div class="var-row">
-                        <span class="var-name">Zoom:</span>
                         <input
-                            type="range"
-                            id="zoomLevel"
-                            min="0.1"
-                            max="5"
-                            step="0.1"
-                            value="1"
-                            class="var-input"
+                            type="file"
+                            id="shaderInput"
+                            accept=".glsl,.frag,.txt"
+                            style="display: none"
                         />
-                        <input
-                            type="number"
-                            id="zoomInput"
-                            value="1"
-                            min="0.1"
-                            max="5"
-                            step="0.1"
-                            style="width: 60px"
-                        />
-                        <button id="resetZoom">Reset</button>
-                        <span id="zoomValue">1x</span>
                     </div>
-                </div>
 
-                <div class="transform-controls">
-                    <h3>Transform</h3>
-                    <div class="var-row">
-                        <span class="var-name">Canvas Position:</span>
-                        <input
-                            type="number"
-                            id="canvasX"
-                            placeholder="X"
-                            min="0"
-                            class="var-input"
-                        />
-                        <input
-                            type="number"
-                            id="canvasY"
-                            placeholder="Y"
-                            min="0"
-                            class="var-input"
-                        />
-                        <input
-                            type="number"
-                            id="canvasWidth"
-                            placeholder="Width"
-                            min="1"
-                            class="var-input"
-                        />
-                        <input
-                            type="number"
-                            id="canvasHeight"
-                            placeholder="Height"
-                            min="1"
-                            class="var-input"
-                        />
-                        <button id="resetCanvas" class="small">Reset</button>
+                    <div class="save-slots">
+                        <div class="save-slot" data-slot="1">Slot 1</div>
+                        <div class="save-slot" data-slot="2">Slot 2</div>
+                        <div class="save-slot" data-slot="3">Slot 3</div>
+                        <div class="save-slot" data-slot="4">Slot 4</div>
+                        <div class="save-slot" data-slot="5">Slot 5</div>
                     </div>
-                    <div class="var-row">
-                        <span class="var-name">Aspect Ratio:</span>
-                        <input
-                            type="number"
-                            id="aspectW"
-                            placeholder="Width"
-                            min="1"
-                            value="16"
-                            class="var-input"
-                        />
-                        <span>:</span>
-                        <input
-                            type="number"
-                            id="aspectH"
-                            placeholder="Height"
-                            min="1"
-                            value="9"
-                            class="var-input"
-                        />
-                        <button id="applyAspect">Apply</button>
-                        <button id="resetAspect" class="small">Reset</button>
+
+                    <div class="code-editor">
+                        <textarea
+                            id="shaderCode"
+                            placeholder="Enter GLSL shader code here..."
+                        ></textarea>
                     </div>
-                    <div class="var-row">
-                        <span class="var-name">Rotation:</span>
-                        <div class="rotation-presets">
-                            <div class="rotation-preset" data-rotation="0">
-                                0°
-                            </div>
-                            <div class="rotation-preset" data-rotation="90">
-                                90°
-                            </div>
-                            <div class="rotation-preset" data-rotation="180">
-                                180°
-                            </div>
-                            <div class="rotation-preset" data-rotation="270">
-                                270°
+                    <button id="applyShader">Apply Shader</button>
+
+                    <div class="control-section">
+                        <h3>Canvas Settings</h3>
+                        <div class="var-row">
+                            <span class="var-name">Background:</span>
+                            <input
+                                type="text"
+                                id="canvasBackground"
+                                value="#000000"
+                                class="var-input"
+                                placeholder="Hex color e.g. #000000"
+                            />
+                            <div
+                                class="color-preview"
+                                id="bgColorPreview"
+                                style="background-color: #000000"
+                            ></div>
+                            <button id="applyBackground">Apply</button>
+                        </div>
+                        <div class="var-row">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="transparentCanvas" />
+                                <label for="transparentCanvas"
+                                    >Transparent Canvas</label
+                                >
                             </div>
                         </div>
-                        <button id="resetRotation" class="small">Reset</button>
-                    </div>
-                    <div class="var-row">
-                        <span class="var-name">Mirror:</span>
-                        <button id="mirrorX">X</button>
-                        <button id="mirrorY">Y</button>
-                        <button id="resetMirror" class="small">Reset</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Panel: Output, Export, and Console -->
-            <div class="right-panel">
-                <h2>Output</h2>
-                <div class="canvas-container" id="canvasContainer">
-                    <canvas id="canvas"></canvas>
-                </div>
-                <div class="output-actions">
-                    <button id="fullscreenPreview">Full Screen Preview</button>
-                    <button id="resetAllParams" class="danger">
-                        Reset All Parameters
-                    </button>
-                </div>
-                <div class="control-section">
-                    <h3>Export Image</h3>
-                    <div class="var-row">
-                        <div class="checkbox-wrapper">
-                            <input type="checkbox" id="exportWithAlpha" />
-                            <label for="exportWithAlpha"
-                                >Export with Alpha</label
-                            >
+                        <div class="var-row">
+                            <span class="var-name">Zoom:</span>
+                            <input
+                                type="range"
+                                id="zoomLevel"
+                                min="0.1"
+                                max="5"
+                                step="0.1"
+                                value="1"
+                                class="var-input"
+                            />
+                            <input
+                                type="number"
+                                id="zoomInput"
+                                value="1"
+                                min="0.1"
+                                max="5"
+                                step="0.1"
+                                style="width: 60px"
+                            />
+                            <button id="resetZoom">Reset</button>
+                            <span id="zoomValue">1x</span>
                         </div>
                     </div>
-                    <div class="var-row">
-                        <button id="savePNG">Save as PNG</button>
-                        <button id="saveJPG">Save as JPG</button>
+
+                    <div class="transform-controls">
+                        <h3>Transform</h3>
+                        <div class="var-row">
+                            <span class="var-name">Canvas Position:</span>
+                            <input
+                                type="number"
+                                id="canvasX"
+                                placeholder="X"
+                                min="0"
+                                class="var-input"
+                            />
+                            <input
+                                type="number"
+                                id="canvasY"
+                                placeholder="Y"
+                                min="0"
+                                class="var-input"
+                            />
+                            <input
+                                type="number"
+                                id="canvasWidth"
+                                placeholder="Width"
+                                min="1"
+                                class="var-input"
+                            />
+                            <input
+                                type="number"
+                                id="canvasHeight"
+                                placeholder="Height"
+                                min="1"
+                                class="var-input"
+                            />
+                            <button id="resetCanvas" class="small">
+                                Reset
+                            </button>
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Aspect Ratio:</span>
+                            <input
+                                type="number"
+                                id="aspectW"
+                                placeholder="Width"
+                                min="1"
+                                value="16"
+                                class="var-input"
+                            />
+                            <span>:</span>
+                            <input
+                                type="number"
+                                id="aspectH"
+                                placeholder="Height"
+                                min="1"
+                                value="9"
+                                class="var-input"
+                            />
+                            <button id="applyAspect">Apply</button>
+                            <button id="resetAspect" class="small">
+                                Reset
+                            </button>
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Rotation:</span>
+                            <div class="rotation-presets">
+                                <div class="rotation-preset" data-rotation="0">
+                                    0°
+                                </div>
+                                <div class="rotation-preset" data-rotation="90">
+                                    90°
+                                </div>
+                                <div
+                                    class="rotation-preset"
+                                    data-rotation="180"
+                                >
+                                    180°
+                                </div>
+                                <div
+                                    class="rotation-preset"
+                                    data-rotation="270"
+                                >
+                                    270°
+                                </div>
+                            </div>
+                            <button id="resetRotation" class="small">
+                                Reset
+                            </button>
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Mirror:</span>
+                            <button id="mirrorX">X</button>
+                            <button id="mirrorY">Y</button>
+                            <button id="resetMirror" class="small">
+                                Reset
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="control-section">
-                    <h3>Export Animation</h3>
-                    <div class="var-row">
-                        <span class="var-name">FPS:</span>
-                        <input
-                            type="number"
-                            id="exportFps"
-                            min="1"
-                            max="60"
-                            value="30"
-                            class="var-input"
-                        />
+
+                <div class="col">
+                    <h2>Output</h2>
+                    <div class="canvas-container" id="canvasContainer">
+                        <canvas id="canvas"></canvas>
                     </div>
-                    <div class="var-row">
-                        <span class="var-name">Bitrate (Mbps):</span>
-                        <input
-                            type="number"
-                            id="exportBitrate"
-                            min="1"
-                            max="50"
-                            value="5"
-                            class="var-input"
-                        />
+
+                    <div class="output-actions">
+                        <button id="fullscreenPreview">
+                            Full Screen Preview
+                        </button>
+                        <button id="resetAllParams" class="danger">
+                            Reset All Parameters
+                        </button>
                     </div>
-                    <div class="var-row">
-                        <span class="var-name">Duration (sec):</span>
-                        <input
-                            type="number"
-                            id="animationDuration"
-                            min="1"
-                            value="5"
-                            class="var-input"
-                        />
+
+                    <div class="control-section">
+                        <h3>Export Image</h3>
+                        <div class="var-row">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="exportWithAlpha" />
+                                <label for="exportWithAlpha"
+                                    >Export with Alpha</label
+                                >
+                            </div>
+                        </div>
+                        <div class="var-row">
+                            <button id="savePNG">Save as PNG</button>
+                            <button id="saveJPG">Save as JPG</button>
+                        </div>
                     </div>
-                    <div class="var-row">
-                        <span class="var-name">Start Time (sec):</span>
-                        <input
-                            type="number"
-                            id="exportStartTime"
-                            min="0"
-                            value="0"
-                            step="0.01"
-                            class="var-input"
-                        />
+
+                    <div class="control-section">
+                        <h3>Export Animation</h3>
+                        <div class="var-row">
+                            <span class="var-name">FPS:</span>
+                            <input
+                                type="number"
+                                id="exportFps"
+                                min="1"
+                                max="60"
+                                value="30"
+                                class="var-input"
+                            />
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Bitrate (Mbps):</span>
+                            <input
+                                type="number"
+                                id="exportBitrate"
+                                min="1"
+                                max="50"
+                                value="5"
+                                class="var-input"
+                            />
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Duration (sec):</span>
+                            <input
+                                type="number"
+                                id="animationDuration"
+                                min="1"
+                                value="5"
+                                class="var-input"
+                            />
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Start Time (sec):</span>
+                            <input
+                                type="number"
+                                id="exportStartTime"
+                                min="0"
+                                value="0"
+                                step="0.01"
+                                class="var-input"
+                            />
+                        </div>
+                        <div class="var-row">
+                            <button id="exportMp4">Export as WebM</button>
+                        </div>
                     </div>
-                    <div class="var-row">
-                        <button id="exportMp4">Export as WebM</button>
-                    </div>
+
+                    <h3>Console</h3>
+                    <div id="console" class="console"></div>
                 </div>
-                <h3>Console</h3>
-                <div id="console" class="console"></div>
             </div>
         </div>
 
-        <!-- Fullscreen preview remains at the document level -->
+        <!-- Fullscreen preview container (hidden by default) -->
         <div
             id="fullscreenContainer"
             style="display: none"
@@ -684,16 +617,17 @@
             </button>
         </div>
 
+        <!-- Shaders -->
         <script type="x-shader/x-fragment" id="defaultFragmentShader">
             precision mediump float;
             varying vec2 v_texcoord;
             uniform sampler2D tex;
             uniform float time;
             void main() {
-              gl_FragColor = texture2D(tex, v_texcoord);
+              vec4 color = texture2D(tex, v_texcoord);
+              gl_FragColor = color;
             }
         </script>
-
         <script type="x-shader/x-vertex" id="vertexShader">
             attribute vec2 a_position;
             attribute vec2 a_texcoord;
@@ -704,7 +638,9 @@
             }
         </script>
 
+        <!-- Main WebGL and controls script -->
         <script>
+            // ------------------------------ WebGL / Controls Script
             const $ = document.getElementById.bind(document);
             const canvas = $("canvas");
             const fsCanvas = $("fullscreenCanvas");
@@ -819,12 +755,10 @@
                 updateCanvasDisplay();
             }
 
-            // Load from localStorage
             if (localStorage.getItem("glsl-shader")) {
                 codeTextarea.value = localStorage.getItem("glsl-shader");
             }
 
-            // Initialize save slots from localStorage
             saveSlots.forEach((slot) => {
                 const slotNum = slot.dataset.slot;
                 if (localStorage.getItem(`glsl-shader-slot-${slotNum}`)) {
@@ -833,7 +767,6 @@
 
                 slot.addEventListener("click", () => {
                     if (slot.classList.contains("active")) {
-                        // Load from slot
                         const content = localStorage.getItem(
                             `glsl-shader-slot-${slotNum}`,
                         );
@@ -849,7 +782,6 @@
                             saveToHistory();
                         }
                     } else {
-                        // Save to slot
                         localStorage.setItem(
                             `glsl-shader-slot-${slotNum}`,
                             codeTextarea.value,
@@ -863,7 +795,6 @@
                     }
                 });
 
-                // Right-click to clear slot
                 slot.addEventListener("contextmenu", (e) => {
                     e.preventDefault();
                     if (confirm(`Clear save slot ${slotNum}?`)) {
@@ -876,7 +807,6 @@
                 });
             });
 
-            // Zoom controls
             zoomSlider.addEventListener("input", () => {
                 zoomLevel = parseFloat(zoomSlider.value);
                 zoomInput.value = zoomLevel;
@@ -899,9 +829,7 @@
                 updateCanvasDisplay();
             });
 
-            // Reset all parameters
             $("resetAllParams").addEventListener("click", () => {
-                // Reset transform
                 rotation = 0;
                 mirrorX = mirrorY = false;
                 if (image) {
@@ -913,14 +841,12 @@
                     };
                 }
 
-                // Reset appearance
                 bgColor = "#000000";
                 useTransparent = false;
                 bgColorInput.value = bgColor;
                 bgColorPreview.style.backgroundColor = bgColor;
                 transCanvas.checked = false;
 
-                // Reset zoom
                 zoomLevel = 1;
                 zoomSlider.value = 1;
                 zoomInput.value = 1;
@@ -934,7 +860,6 @@
                 log("All parameters reset to defaults");
             });
 
-            // Background color
             bgColorInput.addEventListener("input", () => {
                 const color = bgColorInput.value;
                 if (/^#[0-9A-F]{6}$/i.test(color)) {
@@ -957,7 +882,6 @@
                 }
             });
 
-            // Transparent canvas toggle
             transCanvas.addEventListener("change", () => {
                 useTransparent = transCanvas.checked;
                 updateCanvasDisplay();
@@ -965,12 +889,10 @@
                 saveToHistory();
             });
 
-            // Export with alpha toggle
             exportAlpha.addEventListener("change", () => {
                 useExportAlpha = exportAlpha.checked;
             });
 
-            // Load image and shader
             $("loadImage").addEventListener("click", () =>
                 $("imageInput").click(),
             );
@@ -1054,7 +976,6 @@
                 log(`Time ${timePaused ? "paused" : "resumed"}`);
             });
 
-            // Fullscreen pause time button
             $("fullscreenPauseTime").addEventListener("click", () => {
                 fsTimePaused = !fsTimePaused;
                 $("fullscreenPauseTime").textContent = fsTimePaused
@@ -1083,7 +1004,6 @@
                 exportAnimation("webm"),
             );
 
-            // Rotation presets
             document.querySelectorAll(".rotation-preset").forEach((preset) => {
                 preset.addEventListener("click", () => {
                     rotation = parseInt(preset.dataset.rotation);
@@ -1097,10 +1017,11 @@
                 document
                     .querySelectorAll(".rotation-preset")
                     .forEach((preset) => {
-                        preset.style.backgroundColor =
-                            parseInt(preset.dataset.rotation) === rotation
-                                ? "var(--btn-active)"
-                                : "var(--btn)";
+                        if (parseInt(preset.dataset.rotation) === rotation) {
+                            preset.classList.add("active");
+                        } else {
+                            preset.classList.remove("active");
+                        }
                     });
             }
 
@@ -1111,7 +1032,6 @@
                 $("canvasHeight").value = canvasState.height;
             }
 
-            // Reset/Mirror buttons
             $("resetRotation").addEventListener("click", () => {
                 rotation = 0;
                 updateRotationUI();
@@ -1167,13 +1087,11 @@
                     const imgRatio = canvasState.width / canvasState.height;
 
                     if (imgRatio > targetRatio) {
-                        // Image is wider, crop width
                         const newWidth = canvasState.height * targetRatio;
                         const deltaX = (canvasState.width - newWidth) / 2;
                         canvasState.x += deltaX;
                         canvasState.width = newWidth;
                     } else {
-                        // Image is taller, crop height
                         const newHeight = canvasState.width / targetRatio;
                         const deltaY = (canvasState.height - newHeight) / 2;
                         canvasState.y += deltaY;
@@ -1186,7 +1104,6 @@
                 }
             });
 
-            // Fullscreen preview
             $("fullscreenPreview").addEventListener(
                 "click",
                 openFullscreenPreview,
@@ -1224,7 +1141,6 @@
             }
 
             function setupFullscreenCanvas() {
-                // Create shader program for fullscreen canvas
                 const vertexShader = createShader(
                     fsGl,
                     fsGl.VERTEX_SHADER,
@@ -1247,7 +1163,6 @@
 
                 fsGl.useProgram(fsProgram);
 
-                // Create position buffer
                 const posBuffer = fsGl.createBuffer();
                 fsGl.bindBuffer(fsGl.ARRAY_BUFFER, posBuffer);
                 fsGl.bufferData(
@@ -1256,7 +1171,6 @@
                     fsGl.STATIC_DRAW,
                 );
 
-                // Apply transformed texcoords
                 const texCoords = getTransformedTexCoords();
                 const texBuffer = fsGl.createBuffer();
                 fsGl.bindBuffer(fsGl.ARRAY_BUFFER, texBuffer);
@@ -1266,7 +1180,6 @@
                     fsGl.STATIC_DRAW,
                 );
 
-                // Set up attributes
                 const posLoc = fsGl.getAttribLocation(fsProgram, "a_position");
                 const texLoc = fsGl.getAttribLocation(fsProgram, "a_texcoord");
 
@@ -1278,7 +1191,6 @@
                 fsGl.enableVertexAttribArray(texLoc);
                 fsGl.vertexAttribPointer(texLoc, 2, fsGl.FLOAT, false, 0, 0);
 
-                // Create and setup texture
                 const texture = fsGl.createTexture();
                 fsGl.bindTexture(fsGl.TEXTURE_2D, texture);
 
@@ -1312,7 +1224,6 @@
                     image,
                 );
 
-                // Set uniforms
                 const texUnitLoc = fsGl.getUniformLocation(fsProgram, "tex");
                 fsGl.uniform1i(texUnitLoc, 0);
 
@@ -1334,7 +1245,6 @@
 
                 fsGl.viewport(0, 0, fsCanvas.width, fsCanvas.height);
 
-                // Parse background color
                 let r = 0,
                     g = 0,
                     b = 0,
@@ -1349,7 +1259,6 @@
                 fsGl.clearColor(r, g, b, a);
                 fsGl.clear(fsGl.COLOR_BUFFER_BIT);
 
-                // Update time uniform
                 const program = fsGl.getParameter(fsGl.CURRENT_PROGRAM);
                 const timeLoc = fsGl.getUniformLocation(program, "time");
                 if (timeLoc) {
@@ -1377,7 +1286,6 @@
                 }
             }
 
-            // Exit fullscreen on button click or ESC key
             document
                 .querySelector(".exit-fullscreen")
                 .addEventListener("click", closeFullscreenPreview);
@@ -1394,7 +1302,6 @@
                 }
             });
 
-            // Monitor canvas input changes
             ["canvasX", "canvasY", "canvasWidth", "canvasHeight"].forEach(
                 (id) => {
                     $(id).addEventListener("change", () => {
@@ -1414,7 +1321,6 @@
                 },
             );
 
-            // WebGL setup
             if (!gl) {
                 log("WebGL not supported!", "error");
             } else {
@@ -1439,7 +1345,6 @@
             }
 
             function initBuffers() {
-                // Position buffer
                 posBuffer = gl.createBuffer();
                 gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
                 gl.bufferData(
@@ -1448,7 +1353,6 @@
                     gl.STATIC_DRAW,
                 );
 
-                // Texture coordinates buffer
                 texCoordBuffer = gl.createBuffer();
                 gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
                 gl.bufferData(
@@ -1460,8 +1364,6 @@
 
             function getTransformedTexCoords() {
                 let texCoords;
-
-                // Optimized presets for 90-degree rotations
                 switch (rotation % 360) {
                     case 0:
                         texCoords = [0, 1, 1, 1, 0, 0, 1, 0];
@@ -1478,21 +1380,16 @@
                     default:
                         texCoords = [0, 1, 1, 1, 0, 0, 1, 0];
                 }
-
-                // Apply mirroring
                 if (mirrorX) {
                     for (let i = 0; i < texCoords.length; i += 2) {
                         texCoords[i] = 1 - texCoords[i];
                     }
                 }
-
                 if (mirrorY) {
                     for (let i = 1; i < texCoords.length; i += 2) {
                         texCoords[i] = 1 - texCoords[i];
                     }
                 }
-
-                // Apply canvas position
                 if (image && image.width > 0 && image.height > 0) {
                     const xScale = canvasState.width / image.width;
                     const yScale = canvasState.height / image.height;
@@ -1504,7 +1401,6 @@
                         texCoords[i + 1] = texCoords[i + 1] * yScale + yOffset;
                     }
                 }
-
                 return texCoords;
             }
 
@@ -1515,7 +1411,9 @@
 
                 if (!ctx.getShaderParameter(shader, ctx.COMPILE_STATUS)) {
                     log(
-                        `Error compiling shader: ${ctx.getShaderInfoLog(shader)}`,
+                        `Error compiling shader: ${ctx.getShaderInfoLog(
+                            shader,
+                        )}`,
                         "error",
                     );
                     ctx.deleteShader(shader);
@@ -1624,7 +1522,6 @@
 
                 log("Shader compiled successfully");
 
-                // Reset time
                 startTime = Date.now();
                 pausedTime = null;
                 timePaused = false;
@@ -1635,7 +1532,6 @@
             function updateTransform() {
                 if (!image) return;
 
-                // Set canvas dimensions based on rotation
                 if (rotation % 180 === 90) {
                     canvas.width = canvasState.height;
                     canvas.height = canvasState.width;
@@ -1644,7 +1540,6 @@
                     canvas.height = canvasState.height;
                 }
 
-                // Update texture coordinates
                 const texCoords = getTransformedTexCoords();
                 gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
                 gl.bufferData(
@@ -1653,7 +1548,6 @@
                     gl.STATIC_DRAW,
                 );
 
-                // Update UI
                 $("mirrorX").classList.toggle("active", mirrorX);
                 $("mirrorY").classList.toggle("active", mirrorY);
 
@@ -1668,10 +1562,7 @@
                 if (useTransparent) {
                     canvasContainer.style.backgroundColor = "transparent";
                     canvasContainer.style.backgroundImage =
-                        "linear-gradient(45deg, #aaa 25%, transparent 25%), " +
-                        "linear-gradient(-45deg, #aaa 25%, transparent 25%), " +
-                        "linear-gradient(45deg, transparent 75%, #aaa 75%), " +
-                        "linear-gradient(-45deg, transparent 75%, #aaa 75%)";
+                        "linear-gradient(45deg, #aaa 25%, transparent 25%), linear-gradient(-45deg, #aaa 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #aaa 75%), linear-gradient(-45deg, transparent 75%, #aaa 75%)";
                     canvasContainer.style.backgroundSize = "20px 20px";
                     canvasContainer.style.backgroundPosition =
                         "0 0, 0 10px, 10px -10px, -10px 0px";
@@ -1686,12 +1577,10 @@
 
             function startRendering() {
                 if (animFrame) cancelAnimationFrame(animFrame);
-
                 function animate() {
                     render();
                     animFrame = requestAnimationFrame(animate);
                 }
-
                 animate();
             }
 
@@ -1707,7 +1596,6 @@
 
                 gl.viewport(0, 0, canvas.width, canvas.height);
 
-                // Set clear color
                 let r = 0,
                     g = 0,
                     b = 0,
@@ -1724,25 +1612,21 @@
 
                 gl.useProgram(program);
 
-                // Bind position buffer
                 const posLoc = gl.getAttribLocation(program, "a_position");
                 gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
                 gl.enableVertexAttribArray(posLoc);
                 gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
-                // Bind texture coordinates
                 const texLoc = gl.getAttribLocation(program, "a_texcoord");
                 gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
                 gl.enableVertexAttribArray(texLoc);
                 gl.vertexAttribPointer(texLoc, 2, gl.FLOAT, false, 0, 0);
 
-                // Set texture
                 const texLocation = gl.getUniformLocation(program, "tex");
                 gl.uniform1i(texLocation, 0);
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, imageTexture);
 
-                // Set time uniform
                 const timeLoc = gl.getUniformLocation(program, "time");
                 if (timeLoc) {
                     if (timePaused && pausedTime !== null) {
@@ -1755,7 +1639,6 @@
                     }
                 }
 
-                // Handle transparency
                 if (useTransparent) {
                     gl.enable(gl.BLEND);
                     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -1768,7 +1651,6 @@
 
             function saveImage(type) {
                 if (!canvas) return;
-
                 try {
                     render();
                     gl.finish();
@@ -1799,7 +1681,9 @@
                     const imageData = tempCanvas.toDataURL(mimeType, quality);
 
                     const link = document.createElement("a");
-                    link.download = `shader_output.${type === "png" ? "png" : "jpg"}`;
+                    link.download = `shader_output.${
+                        type === "png" ? "png" : "jpg"
+                    }`;
                     link.href = imageData;
                     link.click();
 
@@ -1814,7 +1698,6 @@
                     log("No canvas to export!", "error");
                     return;
                 }
-
                 if (type === "webm") {
                     try {
                         const duration =
@@ -1825,7 +1708,9 @@
                         const bitrate = parseInt($("exportBitrate").value) || 5;
 
                         log(
-                            `Starting animation export: ${duration * fps} frames at ${fps} fps, starting at ${startTime}s...`,
+                            `Starting animation export: ${
+                                duration * fps
+                            } frames at ${fps} fps, starting at ${startTime}s...`,
                         );
 
                         timePaused = true;
@@ -1894,12 +1779,23 @@
                 consoleEl.scrollTop = consoleEl.scrollHeight;
             }
 
-            // Start rendering
             startRendering();
-
-            // Initial UI setup
             updateRotationUI();
             updateHistoryBtns();
+        </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const zoomSlider = document.getElementById("zoomLevel");
+                function updateSliderBackground() {
+                    const min = parseFloat(zoomSlider.min) || 0;
+                    const max = parseFloat(zoomSlider.max) || 100;
+                    const value = parseFloat(zoomSlider.value);
+                    const percentage = ((value - min) * 100) / (max - min);
+                    zoomSlider.style.background = `linear-gradient(to right, var(--slider-color) ${percentage}%, #444 ${percentage}%)`;
+                }
+                updateSliderBackground();
+                zoomSlider.addEventListener("input", updateSliderBackground);
+            });
         </script>
     </body>
 </html>
