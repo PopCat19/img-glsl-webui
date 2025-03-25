@@ -85,22 +85,34 @@
                 min-width: 300px;
             }
 
-            /* Canvas and preview styles */
-            canvas {
-                max-width: 100%;
-                background-color: var(--bg-panel);
-                border: var(--border-thickness) solid var(--border);
-                display: block;
-            }
+            /* Updated Canvas and preview styles */
             .canvas-container {
                 max-width: 100%;
                 background-color: var(--bg-panel);
-                border: var(--border-thickness) solid var(--border);
+                border: none;
                 position: relative;
                 overflow: hidden;
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                margin: 0 auto;
+                width: fit-content; /* Makes container hug contents */
+                padding: 0;
+            }
+
+            canvas {
+                background-color: transparent;
+                border: none;
+                display: block;
+                max-width: 100%;
+                width: auto;
+                height: auto;
+                margin: 0;
+                object-fit: contain; /* Ensures proper scaling */
+                image-rendering: -moz-crisp-edges; /* Firefox */
+                image-rendering: -webkit-optimize-contrast; /* Safari */
+                image-rendering: crisp-edges;
+                -ms-interpolation-mode: nearest-neighbor; /* IE */
             }
 
             textarea,
@@ -1053,11 +1065,9 @@
                 });
 
             // For the file input "Load Image" functionality:
-            $("loadImage").addEventListener("click", () => {
-                // Clicking the loadImage button will trigger the file input
-                $("imageInput").click();
-            });
-
+            $("loadImage").addEventListener("click", () =>
+                $("imageInput").click(),
+            );
             $("imageInput").addEventListener("change", (e) => {
                 if (e.target.files.length > 0) {
                     const file = e.target.files[0];
