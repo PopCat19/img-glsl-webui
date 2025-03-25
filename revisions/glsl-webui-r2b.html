@@ -335,7 +335,12 @@
                     <!-- Moved Apply Shader button above the slot buttons -->
                     <h3>Shader Code</h3>
                     <div class="var-row">
-                        <button id="applyShader">Apply Shader</button>
+                        <button id="updateShader" type="button">
+                            Update Shader
+                        </button>
+                        <button id="toggleShader" type="button">
+                            Toggle Shader
+                        </button>
                         <button id="loadShader">Load Shader</button>
                         <button id="saveCurrentSlot">Save Current Slot</button>
                         <button id="pauseTime">Pause Time</button>
@@ -641,6 +646,58 @@
             }
         </script>
 
+        <script>
+            let shaderActive = true; // global flag for shader state
+
+            document
+                .getElementById("toggleShader")
+                .addEventListener("click", () => {
+                    shaderActive = !shaderActive;
+                    if (shaderActive) {
+                        log("Shader toggled on.");
+                        // Compile the custom shader (using code in the text area)
+                        compileShader();
+                        render();
+                    } else {
+                        log("Shader toggled off.");
+                        // Compile the default/pass-through shader
+                        compileDefaultShader();
+                        render();
+                    }
+                });
+
+            function compileDefaultShader() {
+                const vertexSource =
+                    document.getElementById("vertexShader").textContent;
+                const defaultFragmentSource = document.getElementById(
+                    "defaultFragmentShader",
+                ).textContent;
+                const vertexShader = createShader(
+                    gl,
+                    gl.VERTEX_SHADER,
+                    vertexSource,
+                );
+                const fragmentShader = createShader(
+                    gl,
+                    gl.FRAGMENT_SHADER,
+                    defaultFragmentSource,
+                );
+
+                const newProgram = createProgram(
+                    gl,
+                    vertexShader,
+                    fragmentShader,
+                );
+                if (!newProgram) return;
+
+                // Delete the previous program if necessary and update the current one.
+                if (program) gl.deleteProgram(program);
+                program = newProgram;
+                gl.useProgram(program);
+                log("Default shader compiled successfully");
+            }
+        </script>
+
         <!-- Main WebGL and controls script -->
         <script>
             // ------------------------------ WebGL / Controls Script
@@ -843,48 +900,110 @@
 
             saveSlots.forEach((slot) => {
                 const slotNum = slot.dataset.slot;
-                if (localStorage.getItem(`glsl-shader-slot-${slotNum}`)) {
-                    slot.classList.add("active");
+                // Set initial text and state.
+                slot.textContent = `Slot ${slotNum}`;
+                slot.dataset.state = "default"; // possible states: default, confirm_save, confirm_load, confirm_clear, finish
+                let timer = null;
+
+                // Utility: Reset the slot to default state.
+                function resetSlot() {
+                    slot.textContent = `Slot ${slotNum}`;
+                    slot.dataset.state = "default";
+                    timer = null;
                 }
 
-                slot.addEventListener("click", () => {
-                    if (slot.classList.contains("active")) {
-                        const content = localStorage.getItem(
-                            `glsl-shader-slot-${slotNum}`,
-                        );
-                        if (content) {
-                            codeTextarea.value = content;
-                            log(`Loaded shader from slot ${slotNum}`);
+                // Left-click handler
+                slot.addEventListener("click", (e) => {
+                    e.preventDefault();
 
-                            saveSlots.forEach((s) =>
-                                s.classList.remove("current"),
-                            );
-                            slot.classList.add("current");
-                            activeSlot = slotNum;
-                            saveToHistory();
+                    // If in clear-confirmation state, a left-click aborts the clear.
+                    if (slot.dataset.state === "confirm_clear") {
+                        if (timer) clearTimeout(timer);
+                        slot.textContent = "aborted";
+                        slot.dataset.state = "finish";
+                        timer = setTimeout(resetSlot, 1000);
+                        return;
+                    }
+
+                    // In default state, start a save/load confirmation.
+                    if (slot.dataset.state === "default") {
+                        // If a saved shader exists, ask for load confirmation.
+                        if (
+                            localStorage.getItem(`glsl-shader-slot-${slotNum}`)
+                        ) {
+                            slot.textContent = "load?";
+                            slot.dataset.state = "confirm_load";
+                        } else {
+                            // Otherwise, ask for save confirmation.
+                            slot.textContent = "save?";
+                            slot.dataset.state = "confirm_save";
                         }
-                    } else {
+                        timer = setTimeout(resetSlot, 3000);
+                        return;
+                    }
+
+                    // Confirm the save action on a second left-click.
+                    if (slot.dataset.state === "confirm_save") {
+                        if (timer) clearTimeout(timer);
                         localStorage.setItem(
                             `glsl-shader-slot-${slotNum}`,
                             codeTextarea.value,
                         );
-                        slot.classList.add("active");
+                        slot.textContent = "saved!";
+                        slot.dataset.state = "finish";
+                        // Optionally mark slot as active (if desired, e.g. add a class).
+                        timer = setTimeout(resetSlot, 1000);
+                        return;
+                    }
 
-                        saveSlots.forEach((s) => s.classList.remove("current"));
-                        slot.classList.add("current");
-                        activeSlot = slotNum;
-                        log(`Saved shader to slot ${slotNum}`);
+                    // Confirm the load action on a second left-click.
+                    if (slot.dataset.state === "confirm_load") {
+                        if (timer) clearTimeout(timer);
+                        const savedContent = localStorage.getItem(
+                            `glsl-shader-slot-${slotNum}`,
+                        );
+                        if (savedContent) {
+                            codeTextarea.value = savedContent;
+                        }
+                        slot.textContent = "loaded!";
+                        slot.dataset.state = "finish";
+                        timer = setTimeout(resetSlot, 1000);
+                        return;
                     }
                 });
 
+                // Right-click (contextmenu) handler
                 slot.addEventListener("contextmenu", (e) => {
                     e.preventDefault();
-                    if (confirm(`Clear save slot ${slotNum}?`)) {
+
+                    // If left-click confirmation is in progress, abort it.
+                    if (
+                        slot.dataset.state === "confirm_save" ||
+                        slot.dataset.state === "confirm_load"
+                    ) {
+                        if (timer) clearTimeout(timer);
+                        slot.textContent = "aborted";
+                        slot.dataset.state = "finish";
+                        timer = setTimeout(resetSlot, 1000);
+                        return;
+                    }
+
+                    // In default state, start the clear-confirmation process.
+                    if (slot.dataset.state === "default") {
+                        slot.textContent = "clear?";
+                        slot.dataset.state = "confirm_clear";
+                        timer = setTimeout(resetSlot, 3000);
+                        return;
+                    }
+
+                    // Confirm clear on second right-click.
+                    if (slot.dataset.state === "confirm_clear") {
+                        if (timer) clearTimeout(timer);
                         localStorage.removeItem(`glsl-shader-slot-${slotNum}`);
-                        slot.classList.remove("active");
-                        slot.classList.remove("current");
-                        if (activeSlot === slotNum) activeSlot = null;
-                        log(`Cleared shader slot ${slotNum}`);
+                        slot.textContent = "cleared!";
+                        slot.dataset.state = "finish";
+                        timer = setTimeout(resetSlot, 1000);
+                        return;
                     }
                 });
             });
@@ -1074,11 +1193,15 @@
                 }
             });
 
-            $("applyShader").addEventListener("click", () => {
-                compileShader();
-                render();
-                saveToHistory();
-            });
+            // Update the shader (recompile/apply shader) when clicking the Update Shader button.
+            document
+                .getElementById("updateShader")
+                .addEventListener("click", () => {
+                    compileShader();
+                    render();
+                    saveToHistory();
+                    log("Shader updated!");
+                });
 
             $("savePNG").addEventListener("click", () => saveImage("png"));
             $("saveJPG").addEventListener("click", () => saveImage("jpeg"));
