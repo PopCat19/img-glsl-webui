@@ -127,9 +127,10 @@
                 background-color: var(--btn-active);
                 color: var(--btn-active-text-color);
             }
+            /* Removed the smaller style by not using the .small helper */
             button.small {
-                padding: 4px 8px;
-                font-size: 0.9em;
+                padding: 8px 16px;
+                font-size: 1em;
             }
             button.danger:hover {
                 background-color: var(--btn-danger);
@@ -152,7 +153,8 @@
                 background-color: var(--bg-panel);
                 padding: var(--padding);
                 border-radius: var(--border-radius);
-                margin: var(--margin) 0;
+                /* Adjusted margin so the bottom spacing is consistent */
+                margin: var(--margin) 0 0 0;
             }
             .transform-controls {
                 margin: var(--margin) 0;
@@ -208,29 +210,7 @@
                 white-space: nowrap;
                 margin-right: 15px;
             }
-            .rotation-presets {
-                display: flex;
-                gap: 5px;
-                margin-top: 5px;
-                flex: 1;
-            }
-            .rotation-preset {
-                flex: 1;
-                text-align: center;
-                padding: 10px;
-                background-color: var(--btn);
-                cursor: pointer;
-                border-radius: var(--border-radius);
-                transition: background-color 0.2s ease;
-                border: var(--border-thickness) solid var(--border);
-                font-size: 1em;
-            }
-            .rotation-preset:hover {
-                background-color: var(--btn-hover);
-            }
-            .rotation-preset:active {
-                transform: scale(0.98);
-            }
+
             .history-controls {
                 display: flex;
                 gap: 5px;
@@ -244,40 +224,50 @@
                 margin: var(--margin) 0;
             }
 
-            /* Slider styling */
+            /* Custom Checkbox Styles */
+            input[type="checkbox"] {
+                /* Remove native appearance */
+                appearance: none;
+                -webkit-appearance: none;
+                width: 20px;
+                height: 20px;
+                border: var(--border-thickness) solid var(--border);
+                background-color: var(--bg-panel);
+                border-radius: 4px;
+                position: relative;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+            }
+
+            /* Change appearance on hover */
+            input[type="checkbox"]:hover {
+                background-color: var(--btn-hover);
+            }
+
+            /* When the checkbox is checked */
+            input[type="checkbox"]:checked {
+                background-color: var(--btn-active);
+            }
+
+            input[type="checkbox"]:checked::after {
+                content: none;
+            }
+
+            /* Hide number input arrows in Chrome, Safari, Edge, Opera */
+            input[type="number"]::-webkit-inner-spin-button,
+            input[type="number"]::-webkit-outer-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+            /* Hide arrows in Firefox */
+            input[type="number"] {
+                -moz-appearance: textfield;
+            }
+
             input[type="range"] {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 100%;
-                height: 10px;
-                background: var(--slider-color);
-                border-radius: var(--border-radius);
-                outline: none;
-                opacity: 0.9;
-                transition: opacity 0.2s;
-                margin: 10px 0;
-            }
-            input[type="range"]:hover {
-                opacity: 1;
-            }
-            input[type="range"]::-webkit-slider-thumb {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 20px;
-                height: 20px;
-                background: var(--btn-active);
-                border-radius: 50%;
-                cursor: pointer;
-                border: var(--border-thickness) solid var(--border);
-                margin-top: -5px;
-            }
-            input[type="range"]::-moz-range-thumb {
-                width: 20px;
-                height: 20px;
-                background: var(--btn-active);
-                border-radius: 50%;
-                cursor: pointer;
-                border: var(--border-thickness) solid var(--border);
+                /* Use the default slider style with your CSS variable for the accent color */
+                accent-color: var(--slider-color);
             }
 
             /* Fullscreen preview styles */
@@ -332,8 +322,10 @@
                         />
                     </div>
 
+                    <!-- Moved Apply Shader button above the slot buttons -->
                     <h3>Shader Code</h3>
                     <div class="var-row">
+                        <button id="applyShader">Apply Shader</button>
                         <button id="loadShader">Load Shader</button>
                         <button id="saveCurrentSlot">Save Current Slot</button>
                         <button id="pauseTime">Pause Time</button>
@@ -363,7 +355,6 @@
                             placeholder="Enter GLSL shader code here..."
                         ></textarea>
                     </div>
-                    <button id="applyShader">Apply Shader</button>
 
                     <div class="control-section">
                         <h3>Canvas Settings</h3>
@@ -411,8 +402,8 @@
                                 step="0.1"
                                 style="width: 60px"
                             />
-                            <button id="resetZoom">Reset</button>
                             <span id="zoomValue">1x</span>
+                            <button id="resetZoom">Reset</button>
                         </div>
                     </div>
 
@@ -448,9 +439,7 @@
                                 min="1"
                                 class="var-input"
                             />
-                            <button id="resetCanvas" class="small">
-                                Reset
-                            </button>
+                            <button id="resetCanvas">Reset</button>
                         </div>
                         <div class="var-row">
                             <span class="var-name">Aspect Ratio:</span>
@@ -472,43 +461,47 @@
                                 class="var-input"
                             />
                             <button id="applyAspect">Apply</button>
-                            <button id="resetAspect" class="small">
-                                Reset
-                            </button>
+                            <button id="resetAspect">Reset</button>
                         </div>
                         <div class="var-row">
                             <span class="var-name">Rotation:</span>
                             <div class="rotation-presets">
-                                <div class="rotation-preset" data-rotation="0">
+                                <button
+                                    type="button"
+                                    class="rotation-preset"
+                                    data-rotation="0"
+                                >
                                     0°
-                                </div>
-                                <div class="rotation-preset" data-rotation="90">
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rotation-preset"
+                                    data-rotation="90"
+                                >
                                     90°
-                                </div>
-                                <div
+                                </button>
+                                <button
+                                    type="button"
                                     class="rotation-preset"
                                     data-rotation="180"
                                 >
                                     180°
-                                </div>
-                                <div
+                                </button>
+                                <button
+                                    type="button"
                                     class="rotation-preset"
                                     data-rotation="270"
                                 >
                                     270°
-                                </div>
+                                </button>
                             </div>
-                            <button id="resetRotation" class="small">
-                                Reset
-                            </button>
+                            <button id="resetRotation">Reset</button>
                         </div>
                         <div class="var-row">
                             <span class="var-name">Mirror:</span>
                             <button id="mirrorX">X</button>
                             <button id="mirrorY">Y</button>
-                            <button id="resetMirror" class="small">
-                                Reset
-                            </button>
+                            <button id="resetMirror">Reset</button>
                         </div>
                     </div>
                 </div>
@@ -533,9 +526,9 @@
                         <div class="var-row">
                             <div class="checkbox-wrapper">
                                 <input type="checkbox" id="exportWithAlpha" />
-                                <label for="exportWithAlpha"
-                                    >Export with Alpha</label
-                                >
+                                <label for="exportWithAlpha">
+                                    Export with Alpha
+                                </label>
                             </div>
                         </div>
                         <div class="var-row">
@@ -685,6 +678,44 @@
             let history = [],
                 historyIndex = -1;
 
+            // Zoom stuff
+            function updateSliderAppearance() {
+                // Update the synced values
+                zoomLevel = parseFloat(zoomSlider.value);
+                zoomInput.value = zoomLevel;
+                zoomValue.textContent = `${zoomLevel.toFixed(1)}x`;
+
+                // Get the raw min, max, and current value
+                let min = parseFloat(zoomSlider.min);
+                let max = parseFloat(zoomSlider.max);
+                let value = zoomLevel;
+
+                // Measure the slider's visible width
+                const sliderWidth = zoomSlider.clientWidth;
+                // The thumb size must match the CSS thumb width (20px in your case)
+                const thumbSize = 20;
+                // The thumb center position is computed as:
+                //   (sliderWidth - thumbSize) * (fraction of progress) + half the thumb
+                const centerPosition =
+                    ((value - min) / (max - min)) * (sliderWidth - thumbSize) +
+                    thumbSize / 2;
+                // Convert that to a percentage relative to the slider's width
+                const centerPercentage = (centerPosition / sliderWidth) * 100;
+
+                // Now set the background gradient:
+                //   From 0% to the computed percentage, use the active (filled) color;
+                //   from that percentage to 100%, use the base slider color.
+                zoomSlider.style.background = `linear-gradient(
+                to right,
+                var(--btn-active) 0%,
+                var(--btn-active) ${centerPercentage}%,
+                var(--slider-color) ${centerPercentage}%,
+                var(--slider-color) 100%
+              )`;
+
+                updateCanvasDisplay();
+            }
+
             // Save slots
             const saveSlots = document.querySelectorAll(".save-slot");
             let activeSlot = null;
@@ -807,11 +838,11 @@
                 });
             });
 
-            zoomSlider.addEventListener("input", () => {
-                zoomLevel = parseFloat(zoomSlider.value);
-                zoomInput.value = zoomLevel;
-                zoomValue.textContent = `${zoomLevel.toFixed(1)}x`;
-                updateCanvasDisplay();
+            zoomSlider.addEventListener("input", updateSliderAppearance);
+            zoomInput.addEventListener("input", () => {
+                zoomLevel = parseFloat(zoomInput.value);
+                zoomSlider.value = zoomLevel;
+                updateSliderAppearance();
             });
 
             zoomInput.addEventListener("input", () => {
@@ -826,7 +857,7 @@
                 zoomSlider.value = 1;
                 zoomInput.value = 1;
                 zoomValue.textContent = "1x";
-                updateCanvasDisplay();
+                updateSliderAppearance();
             });
 
             $("resetAllParams").addEventListener("click", () => {

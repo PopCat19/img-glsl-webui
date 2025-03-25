@@ -82,7 +82,7 @@ uniform float time;
 
 // Color Settings
 #define COLOR_DEPTH 16         // Bit depth reducation: 8, 16, or 24
-const float COLOR_TEMPERATURE = 3200.0; // White balance in Kelvin (1000-40000)
+const float COLOR_TEMPERATURE = 4000.0; // White balance in Kelvin (1000-40000)
 const float COLOR_TEMPERATURE_STRENGTH = 1.0; // Color temperature mix strength (0.0-1.0)
 
 // Pixelation Effect
@@ -158,7 +158,7 @@ vec3 applyBitrateCompression(vec2 uv, vec3 color) {
 #if DEBUG_BITRATE
     // Calculate block position
     vec2 blockUV = floor(uv * BITRATE_BLOCK_SIZE) / BITRATE_BLOCK_SIZE;
-    
+
     // Calculate average color for the block
     vec3 avgColor = vec3(0.0);
     for(float x = 0.0; x < 1.0; x += 0.25) {
@@ -168,11 +168,11 @@ vec3 applyBitrateCompression(vec2 uv, vec3 color) {
         }
     }
     avgColor /= 16.0;
-    
+
     // Add noise to block edges
     float noise = random(blockUV * BITRATE_BLOCK_SIZE) * BITRATE_NOISE_AMOUNT;
     avgColor *= 1.0 + noise * BITRATE_STRENGTH;
-    
+
     return mix(color, avgColor, BITRATE_STRENGTH);
 #else
     return color;
@@ -207,15 +207,15 @@ vec3 applyChromaticAberration(vec2 uv, out float alpha) {
     float cosA = cos(CA_ANGLE);
     float sinA = sin(CA_ANGLE);
     dir = vec2(dir.x * cosA - dir.y * sinA, dir.x * sinA + dir.y * cosA);
-    
+
     float dist = length(dir);
     float edgeComponent = pow(dist, CA_FALLOFF_EXPONENT);
     float centerComponent = (1.0 - edgeComponent) * CA_CENTER_STRENGTH;
     float totalFalloff = edgeComponent + centerComponent;
-    
+
     float strength_r = totalFalloff * CA_RED_STRENGTH;
     float strength_b = totalFalloff * CA_BLUE_STRENGTH;
-    
+
     alpha = texture2D(tex, uv).a;
     return vec3(
         texture2D(tex, uv + dir * strength_r).r,
@@ -230,20 +230,20 @@ vec3 calculateBloom(vec2 uv) {
     float total = 0.0;
     const float goldenAngle = 2.39996; // 137.508° for optimal distribution
     float currentAngle = 0.0;
-    
+
     for(int i = 0; i < BLOOM_SAMPLES; i++) {
         // Spiral distribution with golden angle
         float ratio = sqrt(float(i)/float(BLOOM_SAMPLES)); // Square root for area distribution
         float radius = ratio * BLOOM_RADIUS;
         currentAngle += goldenAngle;
-        
+
         // Calculate sample direction
         vec2 dir = vec2(cos(currentAngle), sin(currentAngle)) * radius;
-        
+
         // Get sample color
         vec2 sampleUV = uv + dir;
         vec3 sampleColor = texture2D(tex, sampleUV).rgb;
-        
+
         // Calculate luminance threshold
         float luminance = dot(sampleColor, vec3(0.299, 0.587, 0.114));
         float softThreshold = smoothstep(
@@ -251,14 +251,14 @@ vec3 calculateBloom(vec2 uv) {
             BLOOM_THRESHOLD + BLOOM_SOFT_THRESHOLD,
             luminance
         );
-        
+
         // Gaussian-style weight calculation
         float weight = exp(-(radius * radius) * BLOOM_FALLOFF_CURVE) * softThreshold;
-        
+
         color += sampleColor * weight;
         total += weight;
     }
-    
+
     return (color / max(total, 0.001)) * BLOOM_INTENSITY * BLOOM_TINT;
 }
 
@@ -328,7 +328,7 @@ vec3 applyGlitch(vec2 uv, float time, vec3 color, float isActive) {
     // Mix effects
     vec3 finalColor = mix(color, distorted, isActive * GLITCH_STRENGTH);
     finalColor = mix(finalColor, texture2D(tex, displacedUV).rgb, isActive * blockGlitch);
-    
+
     return finalColor;
 }
 
@@ -341,12 +341,12 @@ void main() {
     // Calculate activation states
     float currentInterval = floor(time / GLITCH_INTERVAL);
     float tInInterval = fract(time / GLITCH_INTERVAL);
-    
+
     // Main glitch activation
     float seedGlitch = random(vec2(currentInterval));
     float intervalActive = step(seedGlitch, GLITCH_PROBABILITY);
     float isActiveGlitch = intervalActive * step(tInInterval, GLITCH_DURATION);
-    
+
     // X vibration activation (separate probability)
     float seedXVib = random(vec2(currentInterval + 100.0)); // Different seed
     float xVibActive = step(seedXVib, GLITCH_X_VIBRATION_PROBABILITY) * intervalActive;
@@ -364,8 +364,8 @@ void main() {
 
     // Apply X-axis vibration with separate probability
     #if DEBUG_GLITCH
-        float xVib = (random(vec2(time, currentInterval)) - 0.5) * 
-                    GLITCH_X_VIBRATION_AMPLITUDE * 
+        float xVib = (random(vec2(time, currentInterval)) - 0.5) *
+                    GLITCH_X_VIBRATION_AMPLITUDE *
                     isActiveXVibration;
         processedUV.x += xVib;
     #endif
@@ -404,7 +404,7 @@ void main() {
     #if DEBUG_COLOR_TEMP
         color = mix(color, color * colorTemperatureToRGB(COLOR_TEMPERATURE), COLOR_TEMPERATURE_STRENGTH);
     #endif
-    
+
     // Color depth quantization
     color = applyColorDepthReduction(color);
 
