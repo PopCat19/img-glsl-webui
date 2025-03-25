@@ -30,6 +30,34 @@
                 --h2-color: #ffc2d1;
                 --h3-color: #ffc2d1;
                 --slider-color: var(--btn-hover);
+                --btn-border-active: #ffcc00;
+            }
+
+            .external-image-row {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+
+            .external-image-row input {
+                flex: 1;
+                min-width: 0;
+            }
+
+            /* Remove extra whitespace under inputs in var-row */
+            .var-row input {
+                margin: 0;
+            }
+
+            /* When a button should have the "border-active" style */
+            button.border-active {
+                border: var(--border-thickness) solid var(--btn-border-active);
+            }
+
+            /* Optionally, a helper if you want to mark the load image button as active when no image is loaded */
+            button.active-state {
+                background-color: var(--btn-active);
+                color: var(--btn-active-text-color);
             }
 
             /* Use CSS variables for colors/fonts */
@@ -106,7 +134,11 @@
                 font-family: monospace;
                 color: var(--text);
             }
-
+            /* A helper class you can use to mark a button as 'border active' */
+            button.border-active {
+                border: var(--border-thickness) solid var(--btn-border-active);
+                /* Optionally, you could adjust padding or background too if needed */
+            }
             button {
                 background-color: var(--btn);
                 color: var(--text);
@@ -313,7 +345,14 @@
                 <div class="col">
                     <h2>Input</h2>
                     <div>
-                        <button id="loadImage">Load Local Image</button>
+                        <button id="loadImage">Load Image</button>
+                        <button
+                            id="unloadImage"
+                            type="button"
+                            style="display: none"
+                        >
+                            Unload Image
+                        </button>
                         <input
                             type="file"
                             id="imageInput"
@@ -321,14 +360,28 @@
                             style="display: none"
                         />
                     </div>
-                    <div class="external-image">
+                    <div class="external-image-row var-row">
                         <input
                             type="text"
                             id="externalImageUrl"
                             placeholder="Enter external image URL"
+                            class="var-input"
                         />
-                        <button id="loadImageByUrl" type="button">
+                        <!-- Initially hidden buttons -->
+                        <button
+                            id="loadImageByUrl"
+                            type="button"
+                            style="display: none"
+                        >
                             Load External Image
+                        </button>
+                        <button
+                            id="clearExternalUrl"
+                            type="button"
+                            style="display: none"
+                            class="danger"
+                        >
+                            Clear Link
                         </button>
                     </div>
 
@@ -745,19 +798,56 @@
             let history = [],
                 historyIndex = -1;
 
-            document
-                .getElementById("loadImageByUrl")
-                .addEventListener("click", () => {
-                    const url = document
-                        .getElementById("externalImageUrl")
-                        .value.trim();
-                    if (!url) {
-                        log("Please enter an external image URL.", "error");
-                        return;
-                    }
+            // External image controls
+            const externalImageUrl = $("externalImageUrl");
+            const loadImageByUrl = $("loadImageByUrl");
+            const clearExternalUrl = $("clearExternalUrl");
 
+            // Helper to check URL validity
+            function isValidImageUrl(url) {
+                return url.match(/\.(jpeg|jpg|gif|png|webp)$/) != null;
+            }
+
+            // Handle URL input changes
+            externalImageUrl.addEventListener("input", () => {
+                const url = externalImageUrl.value.trim();
+
+                if (isValidImageUrl(url)) {
+                    loadImageByUrl.style.display = "inline-block";
+                    clearExternalUrl.style.display = "none";
+                } else {
+                    loadImageByUrl.style.display = "none";
+                    clearExternalUrl.style.display = "none";
+                }
+            });
+
+            // Handle Enter/Return key press
+            externalImageUrl.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.keyCode === 13) {
+                    e.preventDefault();
+                    if (loadImageByUrl.style.display === "inline-block") {
+                        loadImageByUrl.click();
+                    }
+                }
+            });
+
+            // Load external image
+            loadImageByUrl.addEventListener("click", async () => {
+                const url = externalImageUrl.value.trim();
+                try {
+                    // Test load first
+                    const testImg = new Image();
+                    testImg.onerror = () => {
+                        throw new Error("Failed to load image");
+                    };
+
+                    await new Promise((resolve, reject) => {
+                        testImg.onload = resolve;
+                        testImg.src = url;
+                    });
+
+                    // If we get here, image loaded successfully
                     const img = new Image();
-                    // Allow cross-origin loading if the server supports it.
                     img.crossOrigin = "Anonymous";
                     img.onload = () => {
                         image = img;
@@ -772,19 +862,200 @@
                         };
 
                         updateCanvasUI();
-                        log(`External image loaded from URL: ${url}`);
-
                         createImageTexture();
                         initBuffers();
                         updateCanvasDisplay();
                         startRendering();
                         saveToHistory();
+
+                        // Update UI states
+                        loadImageByUrl.style.display = "none";
+                        clearExternalUrl.style.display = "inline-block";
+                        updateImageButtons();
+                        log(`External image loaded from URL: ${url}`);
                     };
                     img.onerror = () => {
                         log(`Error loading image from URL: ${url}`, "error");
                     };
                     img.src = url;
+                } catch (err) {
+                    log(`Error loading image: ${err.message}`, "error");
+                }
+            });
+
+            // Clear external URL
+            clearExternalUrl.addEventListener("click", () => {
+                externalImageUrl.value = "";
+                loadImageByUrl.style.display = "none";
+                clearExternalUrl.style.display = "none";
+
+                // Optional: Unload the current external image
+                if (image && image.src === externalImageUrl.value.trim()) {
+                    image = null;
+                    updateImageButtons();
+                    log("External image unloaded");
+                }
+            });
+
+            // Update the state of image load buttons
+            function updateImageButtons() {
+                const loadImageBtn = $("loadImage");
+                const unloadImageBtn = $("unloadImage");
+
+                if (!image) {
+                    // No image loaded: show "Load Image" with an active style and hide unload button
+                    loadImageBtn.textContent = "Load Image";
+                    loadImageBtn.classList.add("active");
+                    unloadImageBtn.style.display = "none";
+                } else {
+                    // Image loaded: change to "Load New Image" and show the unload button
+                    loadImageBtn.textContent = "Load New Image";
+                    loadImageBtn.classList.remove("active");
+                    unloadImageBtn.style.display = "inline-block";
+                }
+            }
+
+            // Initialize button states
+            updateImageButtons();
+
+            // Update the state of image load buttons based on whether an image is loaded
+            function updateImageButtons() {
+                const loadImageBtn = document.getElementById("loadImage");
+                const unloadImageBtn = document.getElementById("unloadImage");
+
+                if (!image) {
+                    // No image loaded: show "Load Image" with an active style and hide unload button.
+                    loadImageBtn.textContent = "Load Image";
+                    loadImageBtn.classList.add("active-state");
+                    unloadImageBtn.style.display = "none";
+                } else {
+                    // Image loaded: change to "Load New Image" and show the unload button.
+                    loadImageBtn.textContent = "Load New Image";
+                    loadImageBtn.classList.remove("active-state");
+                    unloadImageBtn.style.display = "inline-block";
+                }
+            }
+
+            // Call updateImageButtons initially (in case no image is loaded)
+            updateImageButtons();
+
+            // Add an event listener for the "Unload Image" button.
+            document
+                .getElementById("unloadImage")
+                .addEventListener("click", () => {
+                    // Clear the image and update the canvas state accordingly.
+                    image = null;
+                    imageTexture = null;
+                    // Optionally, you can clear the canvas (for example, fill with background color)
+                    gl.clearColor(0, 0, 0, 1);
+                    gl.clear(gl.COLOR_BUFFER_BIT);
+                    // You may also wish to reset canvasState to default values.
+                    canvasState = {
+                        x: 0,
+                        y: 0,
+                        width: canvas.width,
+                        height: canvas.height,
+                    };
+                    log("Image unloaded.");
+                    updateImageButtons();
                 });
+
+            // For the file input "Load Image" functionality:
+            $("loadImage").addEventListener("click", () => {
+                // Clicking the loadImage button will trigger the file input
+                $("imageInput").click();
+            });
+
+            $("imageInput").addEventListener("change", (e) => {
+                if (e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            image = img;
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+
+                            canvasState = {
+                                x: 0,
+                                y: 0,
+                                width: img.width,
+                                height: img.height,
+                            };
+                            updateCanvasUI();
+                            log(
+                                `Image loaded: ${file.name} (${img.width}x${img.height})`,
+                            );
+
+                            createImageTexture();
+                            initBuffers();
+                            updateCanvasDisplay();
+                            startRendering();
+                            saveToHistory();
+                            // Update the buttons to reflect that an image is loaded
+                            updateImageButtons();
+                        };
+                        img.src = evt.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // For the "Load External Image" functionality:
+            $("loadImageByUrl").addEventListener("click", () => {
+                const url = $("externalImageUrl").value.trim();
+                if (!url) {
+                    log("Please enter an external image URL.", "error");
+                    return;
+                }
+
+                const img = new Image();
+                img.crossOrigin = "Anonymous"; // Allow CORS if possible
+                img.onload = () => {
+                    image = img;
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+
+                    canvasState = {
+                        x: 0,
+                        y: 0,
+                        width: img.width,
+                        height: img.height,
+                    };
+
+                    updateCanvasUI();
+                    log(`External image loaded from URL: ${url}`);
+
+                    createImageTexture();
+                    initBuffers();
+                    updateCanvasDisplay();
+                    startRendering();
+                    saveToHistory();
+                    // Update button states after loading an image.
+                    updateImageButtons();
+                };
+                img.onerror = () => {
+                    log(`Error loading image from URL: ${url}`, "error");
+                };
+                img.src = url;
+            });
+
+            // Add an event listener to the external image URL field to update the button style
+            $("externalImageUrl").addEventListener("input", () => {
+                const loadExternalBtn = $("loadImageByUrl");
+                if ($("externalImageUrl").value.trim() === "") {
+                    // When the field is empty, give the button a border style.
+                    loadExternalBtn.classList.add("border-active");
+                } else {
+                    loadExternalBtn.classList.remove("border-active");
+                }
+            });
+
+            // You may wish to trigger the input event on page load to set the proper initial state:
+            document
+                .getElementById("externalImageUrl")
+                .dispatchEvent(new Event("input"));
 
             // Zoom stuff
             function updateSliderAppearance() {
