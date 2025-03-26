@@ -1,0 +1,2548 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>GLSL Image Shader</title>
+        <style>
+            /* ==================== CSS VARIABLES ==================== */
+            :root {
+                /* ==================== COLOR SCHEME ==================== */
+                --background: var(--bg-dark); /* Main background */
+                --bg-dark: #1e0b10;
+                --bg-panel: #ff99b21f;
+                --bg-console: #000000;
+                --border: #ff99b21f;
+                --border-input: #ff99b21f;
+                --text: #ff99b2;
+                --btn: #ff99b21f;
+                --btn-hover: #ff99b252;
+                --btn-active: #ffc2d1;
+                --btn-active-text-color: #000000;
+                --btn-danger: #ff477552;
+                --btn-danger-hover: #ff477552;
+                --btn-danger-text: #ff99b2;
+                --console-text: #ff99b2;
+                --h1-color: #ffc2d1;
+                --h2-color: #ffc2d1;
+                --h3-color: #ffc2d1;
+                --slider-color: var(--btn-hover);
+                --btn-border-active: #ffcc00;
+                --label-color: var(--text);
+
+                /* ==================== FORM CONTROLS ==================== */
+                --checkbox-border: var(--border);
+                --checkbox-size: 20px;
+                --checkbox-hover: var(--btn-hover);
+                --slider-track: #444;
+                --slider-thumb-size: 20px;
+
+                /* ==================== FULLSCREEN ==================== */
+                --fullscreen-bg: rgba(0, 0, 0, 0.9);
+                --exit-btn-bg: rgba(0, 0, 0, 0.5);
+                --exit-btn-hover-bg: rgba(30, 30, 30, 0.8);
+
+                /* ==================== TRANSPARENCY GRID ==================== */
+                --grid-color: #aaa;
+                --grid-size: 20px;
+
+                /* ==================== SPACING & SIZING ==================== */
+                --gap: 16px;
+                --border-thickness: 2px;
+                --border-radius: 8px;
+                --margin: 16px;
+                --margin-small: 8px;
+                --button-margin: 4px 0 4px 0;
+                --padding: 16px;
+                --padding-small: 8px;
+                --console-padding: var(--padding);
+
+                /* ==================== TYPOGRAPHY ==================== */
+                --font-family: sans-serif;
+                --console-font-size: 1em;
+            }
+
+            /* ==================== BASE STYLES ==================== */
+            body {
+                background-color: var(--background);
+                color: var(--text);
+                font-family: var(--font-family);
+                margin: var(--padding);
+            }
+
+            h1 {
+                position: center;
+                text-align: center;
+            }
+
+            h2,
+            h3 {
+                margin: var(--margin) 0 var(--margin) 0;
+            }
+
+            /* ==================== LAYOUT STRUCTURE ==================== */
+            .container {
+                display: flex;
+                flex-direction: column;
+                gap: var(--gap);
+            }
+
+            .row {
+                display: flex;
+                gap: var(--gap);
+                flex-wrap: wrap;
+            }
+
+            .col {
+                flex: 1;
+                min-width: 300px;
+            }
+
+            /* ==================== CANVAS & PREVIEW ==================== */
+            .canvas-container {
+                max-width: 100%;
+                background-color: var(--bg-panel);
+                border: none;
+                position: relative;
+                overflow: hidden;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 0 auto;
+                width: fit-content;
+                padding: 0;
+            }
+
+            .canvas-container.transparent {
+                background-image:
+                    linear-gradient(
+                        45deg,
+                        var(--grid-color) 25%,
+                        transparent 25%
+                    ),
+                    linear-gradient(
+                        -45deg,
+                        var(--grid-color) 25%,
+                        transparent 25%
+                    ),
+                    linear-gradient(
+                        45deg,
+                        transparent 75%,
+                        var(--grid-color) 75%
+                    ),
+                    linear-gradient(
+                        -45deg,
+                        transparent 75%,
+                        var(--grid-color) 75%
+                    );
+                background-size: var(--grid-size) var(--grid-size);
+                background-position:
+                    0 0,
+                    0 10px,
+                    10px -10px,
+                    -10px 0px;
+            }
+
+            canvas {
+                background-color: transparent;
+                border: none;
+                display: block;
+                max-width: 100%;
+                width: auto;
+                height: auto;
+                margin: 0;
+                object-fit: contain;
+                image-rendering: -moz-crisp-edges;
+                image-rendering: -webkit-optimize-contrast;
+                image-rendering: crisp-edges;
+                -ms-interpolation-mode: nearest-neighbor;
+            }
+
+            /* ==================== FORM CONTROLS ==================== */
+            textarea,
+            input {
+                background-color: var(--bg-panel);
+                color: var(--text);
+                border: var(--border-thickness) solid var(--border-input);
+                border-radius: var(--border-radius);
+                padding: 8px;
+                width: 100%;
+                box-sizing: border-box;
+                font-family: monospace;
+            }
+
+            label {
+                color: var(--label-color);
+            }
+
+            /* ==================== CODE EDITOR ==================== */
+            .code-editor {
+                height: 400px;
+                background-color: var(--bg-panel);
+                border: var(--border-thickness) solid var(--border-input);
+                border-radius: var(--border-radius);
+                overflow: hidden;
+            }
+
+            .code-editor textarea {
+                width: 100%;
+                height: 100%;
+                resize: none;
+                border: none;
+                padding: 8px;
+                background-color: transparent;
+                line-height: 1.5;
+                tab-size: 2;
+                font-family: monospace;
+                color: var(--text);
+            }
+
+            /* ==================== BUTTONS ==================== */
+            button {
+                background-color: var(--btn);
+                color: var(--text);
+                border: none;
+                padding: 8px 16px;
+                cursor: pointer;
+                margin: 5px 0;
+                border-radius: var(--border-radius);
+                transition: all 0.2s ease;
+            }
+
+            button:hover {
+                background-color: var(--btn-hover);
+            }
+
+            button:active {
+                transform: scale(0.98);
+            }
+
+            button.active {
+                background-color: var(--btn-active);
+                color: var(--btn-active-text-color);
+            }
+
+            button.danger {
+                background-color: var(--btn);
+                color: var(--btn-danger-text);
+            }
+
+            button.danger:hover {
+                background-color: var(--btn-danger-hover);
+            }
+
+            button.border-active {
+                border: var(--border-thickness) solid var(--btn-border-active);
+            }
+
+            /* ==================== CONSOLE ==================== */
+            .console {
+                background-color: var(--bg-console);
+                color: var(--console-text);
+                padding: var(--console-padding);
+                font-family: monospace;
+                font-size: var(--console-font-size);
+                height: 150px;
+                overflow-y: auto;
+                margin-top: 10px;
+                white-space: pre-wrap;
+                border-radius: var(--border-radius);
+            }
+
+            /* ==================== CONTROL SECTIONS ==================== */
+            .control-section {
+                background-color: var(--bg-panel);
+                padding: var(--padding-small) var(--padding) var(--padding)
+                    var(--padding);
+                border-radius: var(--border-radius);
+                margin: var(--margin) 0 0 0;
+            }
+
+            .output-actions {
+                display: flex;
+                align-items: center;
+                gap: var(--gap);
+                flex-wrap: wrap;
+                border: var(--border-thickness);
+                border-style: solid;
+                border-color: var(--border);
+                padding: var(--padding-small);
+                border-radius: var(--border-radius);
+                margin: var(--margin) 0 0 0;
+            }
+
+            .transform-controls {
+                margin: var(--margin) 0;
+                padding: var(--padding);
+                background-color: var(--bg-panel);
+                border-radius: var(--border-radius);
+            }
+
+            /* ==================== VARIABLE ROWS ==================== */
+            .var-row {
+                display: flex;
+                align-items: center;
+                gap: var(--gap);
+                flex-wrap: wrap;
+                border-color: var(--border);
+                border-radius: var(--border-radius);
+                margin: var(--margin) 0 0 0;
+            }
+
+            .var-name {
+                width: 150px;
+                flex-shrink: 0;
+            }
+
+            .var-input {
+                flex: 1;
+                margin: 4px 0 4px 0;
+            }
+
+            .external-image-row {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+
+            /* ==================== SAVE SLOTS ==================== */
+            .save-slots {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px;
+                margin: var(--margin) 0;
+            }
+
+            .save-slot {
+                background-color: var(--btn);
+                padding: 8px;
+                border-radius: var(--border-radius);
+                cursor: pointer;
+                flex: 1;
+                min-width: 80px;
+                text-align: center;
+                transition: all 0.2s ease;
+            }
+
+            .save-slot:hover {
+                background-color: var(--btn-hover);
+            }
+
+            .save-slot:active {
+                transform: scale(0.98);
+            }
+
+            .save-slot.active {
+                background-color: var(--btn-active);
+                color: var(--background);
+            }
+
+            /* ==================== CHECKBOXES ==================== */
+            .checkbox-wrapper {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                white-space: nowrap;
+                margin-right: 15px;
+            }
+
+            input[type="checkbox"] {
+                appearance: none;
+                -webkit-appearance: none;
+                width: var(--checkbox-size);
+                height: var(--checkbox-size);
+                border: var(--border-thickness) solid var(--checkbox-border);
+                background-color: var(--bg-panel);
+                border-radius: 4px;
+                position: relative;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+            }
+
+            input[type="checkbox"]:hover {
+                background-color: var(--checkbox-hover);
+            }
+
+            input[type="checkbox"]:checked {
+                background-color: var(--btn-active);
+            }
+
+            /* ==================== NUMBER INPUTS ==================== */
+            input[type="number"]::-webkit-inner-spin-button,
+            input[type="number"]::-webkit-outer-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+            input[type="number"] {
+                -moz-appearance: textfield;
+            }
+
+            /* ==================== RANGE INPUTS ==================== */
+            input[type="range"] {
+                accent-color: var(--slider-color);
+            }
+
+            /* ==================== FULLSCREEN PREVIEW ==================== */
+            .fullscreen-preview {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: var(--fullscreen-bg);
+                z-index: 1000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                cursor: pointer;
+            }
+
+            .fullscreen-preview canvas {
+                max-width: 95vw;
+                max-height: 95vh;
+                object-fit: contain;
+            }
+
+            .exit-fullscreen {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background: var(--exit-btn-bg);
+                color: white;
+                border: none;
+                border-radius: var(--border-radius);
+                padding: 10px 15px;
+                cursor: pointer;
+            }
+
+            .exit-fullscreen:hover {
+                background: var(--exit-btn-hover-bg);
+            }
+
+            /* ==================== DRAG & DROP ==================== */
+            .canvas-container.drag-over {
+                border: 2px dashed var(--btn-active) !important;
+                background-color: var(--btn-hover) !important;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- ==================== MAIN LAYOUT ==================== -->
+        <div class="container">
+            <h1>GLSL Image Shader</h1>
+            <div class="row">
+                <!-- ==================== INPUT COLUMN ==================== -->
+                <div class="col">
+                    <h2>Input</h2>
+
+                    <!-- Image Loading Controls -->
+                    <div>
+                        <button id="loadImage">Load Image</button>
+                        <button
+                            id="unloadImage"
+                            type="button"
+                            style="display: none"
+                        >
+                            Unload Image
+                        </button>
+                        <input
+                            type="file"
+                            id="imageInput"
+                            accept="image/*"
+                            style="display: none"
+                        />
+                    </div>
+
+                    <!-- External Image URL Input -->
+                    <div class="external-image-row var-row">
+                        <input
+                            type="text"
+                            id="externalImageUrl"
+                            placeholder="Enter external image URL"
+                            class="var-input"
+                        />
+                        <button
+                            id="loadImageByUrl"
+                            type="button"
+                            style="display: none"
+                        >
+                            Load External Image
+                        </button>
+                        <button
+                            id="clearExternalUrl"
+                            type="button"
+                            style="display: none"
+                            class="danger"
+                        >
+                            Clear Link
+                        </button>
+                    </div>
+
+                    <!-- Shader Controls -->
+                    <h3>Shader Code</h3>
+                    <div class="var-row">
+                        <button id="updateShader" type="button">
+                            Apply/Update Shader
+                        </button>
+                        <button id="toggleShader" type="button">
+                            Toggle Shader
+                        </button>
+                        <button id="loadShader">Load Shader</button>
+                        <button id="saveCurrentSlot">Save Current Slot</button>
+                        <button id="pauseTime">Pause Time</button>
+                        <div class="history-controls">
+                            <button id="undoButton" title="Undo">↩</button>
+                            <button id="redoButton" title="Redo">↪</button>
+                        </div>
+                        <input
+                            type="file"
+                            id="shaderInput"
+                            accept=".glsl,.frag,.txt"
+                            style="display: none"
+                        />
+                    </div>
+
+                    <!-- Save Slots -->
+                    <div class="save-slots">
+                        <div class="save-slot" data-slot="1">Slot 1</div>
+                        <div class="save-slot" data-slot="2">Slot 2</div>
+                        <div class="save-slot" data-slot="3">Slot 3</div>
+                        <div class="save-slot" data-slot="4">Slot 4</div>
+                        <div class="save-slot" data-slot="5">Slot 5</div>
+                    </div>
+
+                    <!-- Shader Code Editor -->
+                    <div class="code-editor">
+                        <textarea
+                            id="shaderCode"
+                            placeholder="Enter GLSL shader code here..."
+                        ></textarea>
+                    </div>
+
+                    <!-- Canvas Settings -->
+                    <div class="control-section">
+                        <h3>Canvas Settings</h3>
+                        <div class="var-row">
+                            <span class="var-name">Background:</span>
+                            <input
+                                type="text"
+                                id="canvasBackground"
+                                value="#000000"
+                                class="var-input"
+                                placeholder="Hex color e.g. #000000"
+                            />
+                            <div
+                                class="color-preview"
+                                id="bgColorPreview"
+                                style="background-color: #000000"
+                            ></div>
+                            <button id="applyBackground">Apply</button>
+                        </div>
+                        <div class="var-row">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="transparentCanvas" />
+                                <label for="transparentCanvas"
+                                    >Transparent Canvas</label
+                                >
+                            </div>
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Zoom:</span>
+                            <input
+                                type="range"
+                                id="zoomLevel"
+                                min="0.1"
+                                max="5"
+                                step="0.1"
+                                value="1"
+                                class="var-input"
+                            />
+                            <input
+                                type="number"
+                                id="zoomInput"
+                                value="1"
+                                min="0.1"
+                                max="5"
+                                step="0.1"
+                                style="width: 60px"
+                            />
+                            <span id="zoomValue">1x</span>
+                            <button id="resetZoom">Reset</button>
+                        </div>
+                    </div>
+
+                    <!-- Transform Controls -->
+                    <div class="transform-controls">
+                        <h3>Transform</h3>
+                        <div class="var-row">
+                            <span class="var-name">Canvas Position:</span>
+                            <input
+                                type="number"
+                                id="canvasX"
+                                placeholder="X"
+                                min="0"
+                                class="var-input"
+                            />
+                            <input
+                                type="number"
+                                id="canvasY"
+                                placeholder="Y"
+                                min="0"
+                                class="var-input"
+                            />
+                            <input
+                                type="number"
+                                id="canvasWidth"
+                                placeholder="Width"
+                                min="1"
+                                class="var-input"
+                            />
+                            <input
+                                type="number"
+                                id="canvasHeight"
+                                placeholder="Height"
+                                min="1"
+                                class="var-input"
+                            />
+                            <button id="resetCanvas">Reset</button>
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Aspect Ratio:</span>
+                            <input
+                                type="number"
+                                id="aspectW"
+                                placeholder="Width"
+                                min="1"
+                                value="16"
+                                class="var-input"
+                            />
+                            <span>:</span>
+                            <input
+                                type="number"
+                                id="aspectH"
+                                placeholder="Height"
+                                min="1"
+                                value="9"
+                                class="var-input"
+                            />
+                            <button id="applyAspect">Apply</button>
+                            <button id="resetAspect">Reset</button>
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Rotation:</span>
+                            <div class="rotation-presets">
+                                <button
+                                    type="button"
+                                    class="rotation-preset"
+                                    data-rotation="0"
+                                >
+                                    0°
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rotation-preset"
+                                    data-rotation="90"
+                                >
+                                    90°
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rotation-preset"
+                                    data-rotation="180"
+                                >
+                                    180°
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rotation-preset"
+                                    data-rotation="270"
+                                >
+                                    270°
+                                </button>
+                            </div>
+                            <button id="resetRotation">Reset</button>
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Mirror:</span>
+                            <button id="mirrorX">X</button>
+                            <button id="mirrorY">Y</button>
+                            <button id="resetMirror">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== OUTPUT COLUMN ==================== -->
+                <div class="col">
+                    <h2>Output</h2>
+                    <div class="canvas-container" id="canvasContainer">
+                        <canvas id="canvas"></canvas>
+                    </div>
+
+                    <div class="output-actions">
+                        <button id="fullscreenPreview">
+                            Full Screen Preview
+                        </button>
+                        <button id="resetAllParams" class="danger">
+                            Reset All Parameters
+                        </button>
+                    </div>
+
+                    <!-- Export Image Controls -->
+                    <div class="control-section">
+                        <h3>Export Image</h3>
+                        <div class="var-row">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="exportWithAlpha" />
+                                <label for="exportWithAlpha"
+                                    >Export with Alpha</label
+                                >
+                            </div>
+                        </div>
+                        <div class="var-row">
+                            <button id="savePNG">Save as PNG</button>
+                            <button id="saveJPG">Save as JPG</button>
+                        </div>
+                    </div>
+
+                    <!-- Export Animation Controls -->
+                    <div class="control-section">
+                        <h3>Export Animation</h3>
+                        <div class="var-row">
+                            <span class="var-name">FPS:</span>
+                            <input
+                                type="number"
+                                id="exportFps"
+                                min="1"
+                                max="60"
+                                value="30"
+                                class="var-input"
+                            />
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Bitrate (Mbps):</span>
+                            <input
+                                type="number"
+                                id="exportBitrate"
+                                min="1"
+                                max="50"
+                                value="5"
+                                class="var-input"
+                            />
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Duration (sec):</span>
+                            <input
+                                type="number"
+                                id="animationDuration"
+                                min="1"
+                                value="5"
+                                class="var-input"
+                            />
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Start Time (sec):</span>
+                            <input
+                                type="number"
+                                id="exportStartTime"
+                                min="0"
+                                value="0"
+                                step="0.01"
+                                class="var-input"
+                            />
+                        </div>
+                        <div class="var-row">
+                            <button id="exportMp4">Export as WebM</button>
+                        </div>
+                    </div>
+
+                    <!-- Console Output -->
+                    <h3>Console</h3>
+                    <div id="console" class="console"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== FULLSCREEN PREVIEW ==================== -->
+        <div
+            id="fullscreenContainer"
+            style="display: none"
+            class="fullscreen-preview"
+        >
+            <canvas id="fullscreenCanvas"></canvas>
+            <button class="exit-fullscreen">Exit Full Screen (ESC)</button>
+            <button
+                id="fullscreenPauseTime"
+                class="exit-fullscreen"
+                style="right: 180px"
+            >
+                Pause Animation
+            </button>
+        </div>
+
+        <!-- ==================== SHADER TEMPLATES ==================== -->
+        <script type="x-shader/x-fragment" id="defaultFragmentShader">
+            precision mediump float;
+            varying vec2 v_texcoord;
+            uniform sampler2D tex;
+            uniform float time;
+            void main() {
+              vec4 color = texture2D(tex, v_texcoord);
+              gl_FragColor = color;
+            }
+        </script>
+        <script type="x-shader/x-vertex" id="vertexShader">
+            attribute vec2 a_position;
+            attribute vec2 a_texcoord;
+            varying vec2 v_texcoord;
+            void main() {
+              gl_Position = vec4(a_position, 0.0, 1.0);
+              v_texcoord = a_texcoord;
+            }
+        </script>
+
+        <!-- ==================== MAIN APPLICATION SCRIPT ==================== -->
+        <script>
+            // ==================== GLOBAL STATE ====================
+            const $ = document.getElementById.bind(document);
+            const canvas = $("canvas");
+            const fsCanvas = $("fullscreenCanvas");
+            const canvasContainer = $("canvasContainer");
+            const fsContainer = $("fullscreenContainer");
+            const gl = canvas.getContext("webgl");
+            let fsGl = null;
+            const consoleEl = $("console");
+            const codeTextarea = $("shaderCode");
+
+            // UI Elements
+            const zoomSlider = $("zoomLevel");
+            const zoomInput = $("zoomInput");
+            const zoomValue = $("zoomValue");
+            const bgColorInput = $("canvasBackground");
+            const bgColorPreview = $("bgColorPreview");
+            const transCanvas = $("transparentCanvas");
+            const exportAlpha = $("exportWithAlpha");
+            const externalImageUrl = $("externalImageUrl");
+            const loadImageByUrl = $("loadImageByUrl");
+            const clearExternalUrl = $("clearExternalUrl");
+
+            // Application State
+            let image = null,
+                imageTexture = null,
+                program = null;
+            let startTime = Date.now(),
+                pausedTime = null;
+            let animFrame = null,
+                fsAnimFrame = null;
+            let posBuffer = null,
+                texCoordBuffer = null;
+            let timePaused = false,
+                fsTimePaused = false;
+            let shaderActive = true; // Flag for shader state
+
+            // Transform State
+            let rotation = 0,
+                mirrorX = false,
+                mirrorY = false;
+            let canvasState = { x: 0, y: 0, width: 0, height: 0 };
+            let zoomLevel = 1,
+                bgColor = "#000000";
+            let useTransparent = false,
+                useExportAlpha = false;
+
+            // History State
+            const maxHistory = 50;
+            let history = [],
+                historyIndex = -1;
+
+            // ==================== UTILITY FUNCTIONS ====================
+
+            /**
+             * Logs messages to both browser console and application console
+             * @param {string} message - The message to log
+             * @param {string} type - The type of message (info, error, etc.)
+             */
+            function log(message, type = "info") {
+                const timestamp = new Date().toLocaleTimeString();
+                const formatted = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
+
+                console[type === "error" ? "error" : "log"](message);
+                consoleEl.innerHTML += formatted + "\n";
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            }
+
+            /**
+             * Creates and compiles a shader
+             * @param {WebGLRenderingContext} ctx - WebGL context
+             * @param {number} type - Shader type (VERTEX_SHADER or FRAGMENT_SHADER)
+             * @param {string} source - Shader source code
+             * @returns {WebGLShader|null} Compiled shader or null on failure
+             */
+            function createShader(ctx, type, source) {
+                const shader = ctx.createShader(type);
+                ctx.shaderSource(shader, source);
+                ctx.compileShader(shader);
+
+                if (!ctx.getShaderParameter(shader, ctx.COMPILE_STATUS)) {
+                    log(
+                        `Error compiling shader: ${ctx.getShaderInfoLog(shader)}`,
+                        "error",
+                    );
+                    ctx.deleteShader(shader);
+                    return null;
+                }
+
+                return shader;
+            }
+
+            /**
+             * Creates and links a WebGL program
+             * @param {WebGLRenderingContext} ctx - WebGL context
+             * @param {WebGLShader} vertexShader - Compiled vertex shader
+             * @param {WebGLShader} fragmentShader - Compiled fragment shader
+             * @returns {WebGLProgram|null} Linked program or null on failure
+             */
+            function createProgram(ctx, vertexShader, fragmentShader) {
+                const prog = ctx.createProgram();
+                ctx.attachShader(prog, vertexShader);
+                ctx.attachShader(prog, fragmentShader);
+                ctx.linkProgram(prog);
+
+                if (!ctx.getProgramParameter(prog, ctx.LINK_STATUS)) {
+                    log(
+                        `Error linking program: ${ctx.getProgramInfoLog(prog)}`,
+                        "error",
+                    );
+                    ctx.deleteProgram(prog);
+                    return null;
+                }
+
+                return prog;
+            }
+
+            // ==================== IMAGE HANDLING ====================
+
+            /**
+             * Updates the state of image load buttons based on whether an image is loaded
+             */
+            function updateImageButtons() {
+                const loadImageBtn = $("loadImage");
+                const unloadImageBtn = $("unloadImage");
+
+                if (!image) {
+                    // No image loaded
+                    loadImageBtn.textContent = "Load Image";
+                    // Use the correct class name 'active'
+                    loadImageBtn.classList.add("active"); // <-- FIX
+                    unloadImageBtn.style.display = "none";
+                } else {
+                    // Image loaded
+                    loadImageBtn.textContent = "Load New Image";
+                    // Use the correct class name 'active'
+                    loadImageBtn.classList.remove("active"); // <-- FIX
+                    unloadImageBtn.style.display = "inline-block";
+                }
+            }
+
+            /**
+             * Creates a WebGL texture from the loaded image
+             */
+            function createImageTexture() {
+                if (!image) return;
+
+                if (imageTexture) gl.deleteTexture(imageTexture);
+
+                imageTexture = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+
+                // Set texture parameters
+                gl.texParameteri(
+                    gl.TEXTURE_2D,
+                    gl.TEXTURE_WRAP_S,
+                    gl.CLAMP_TO_EDGE,
+                );
+                gl.texParameteri(
+                    gl.TEXTURE_2D,
+                    gl.TEXTURE_WRAP_T,
+                    gl.CLAMP_TO_EDGE,
+                );
+                gl.texParameteri(
+                    gl.TEXTURE_2D,
+                    gl.TEXTURE_MIN_FILTER,
+                    gl.LINEAR,
+                );
+                gl.texParameteri(
+                    gl.TEXTURE_2D,
+                    gl.TEXTURE_MAG_FILTER,
+                    gl.LINEAR,
+                );
+
+                // Upload image to texture
+                gl.texImage2D(
+                    gl.TEXTURE_2D,
+                    0,
+                    gl.RGBA,
+                    gl.RGBA,
+                    gl.UNSIGNED_BYTE,
+                    image,
+                );
+
+                // Update canvas dimensions
+                canvas.width = image.width;
+                canvas.height = image.height;
+
+                // Reset canvas state
+                canvasState = {
+                    x: 0,
+                    y: 0,
+                    width: image.width,
+                    height: image.height,
+                };
+            }
+
+            /**
+             * Handles image file loading
+             * @param {File} file - Image file to load
+             */
+            function handleImageFile(file) {
+                if (!file.type.match("image.*")) {
+                    log("Dropped file is not an image", "error");
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        image = img;
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+
+                        canvasState = {
+                            x: 0,
+                            y: 0,
+                            width: img.width,
+                            height: img.height,
+                        };
+
+                        updateCanvasUI();
+                        log(
+                            `Image loaded: ${file.name} (${img.width}x${img.height})`,
+                        );
+
+                        createImageTexture();
+                        initBuffers();
+                        updateCanvasDisplay();
+                        startRendering();
+                        saveToHistory();
+                        updateImageButtons();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // ==================== SHADER COMPILATION ====================
+
+            /**
+             * Compiles the default pass-through shader
+             */
+            function compileDefaultShader() {
+                const vertexSource = $("vertexShader").textContent;
+                const defaultFragmentSource = $(
+                    "defaultFragmentShader",
+                ).textContent;
+                const vertexShader = createShader(
+                    gl,
+                    gl.VERTEX_SHADER,
+                    vertexSource,
+                );
+                const fragmentShader = createShader(
+                    gl,
+                    gl.FRAGMENT_SHADER,
+                    defaultFragmentSource,
+                );
+
+                const newProgram = createProgram(
+                    gl,
+                    vertexShader,
+                    fragmentShader,
+                );
+                if (!newProgram) return;
+
+                // Replace current program
+                if (program) gl.deleteProgram(program);
+                program = newProgram;
+                gl.useProgram(program);
+                log("Default shader compiled successfully");
+            }
+
+            /**
+             * Compiles the custom shader from the textarea
+             */
+            function compileShader() {
+                const fragmentSource = codeTextarea.value.trim();
+                if (!fragmentSource) {
+                    log("Shader code is empty!", "error");
+                    return;
+                }
+
+                const vertexShader = createShader(
+                    gl,
+                    gl.VERTEX_SHADER,
+                    $("vertexShader").textContent,
+                );
+                const fragmentShader = createShader(
+                    gl,
+                    gl.FRAGMENT_SHADER,
+                    fragmentSource,
+                );
+                if (!fragmentShader) return;
+
+                const newProgram = createProgram(
+                    gl,
+                    vertexShader,
+                    fragmentShader,
+                );
+                if (!newProgram) return;
+
+                if (program) gl.deleteProgram(program);
+                program = newProgram;
+                gl.useProgram(program);
+
+                log("Shader compiled successfully");
+
+                // Reset time tracking
+                startTime = Date.now();
+                pausedTime = null;
+                timePaused = false;
+                $("pauseTime").classList.remove("active");
+                $("pauseTime").textContent = "Pause Time";
+            }
+
+            // ==================== RENDERING ====================
+
+            /**
+             * Initializes WebGL buffers
+             */
+            function initBuffers() {
+                // Position buffer (full-screen quad)
+                posBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+                gl.bufferData(
+                    gl.ARRAY_BUFFER,
+                    new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+                    gl.STATIC_DRAW,
+                );
+
+                // Texture coordinate buffer
+                texCoordBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+                gl.bufferData(
+                    gl.ARRAY_BUFFER,
+                    new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]),
+                    gl.STATIC_DRAW,
+                );
+            }
+
+            /**
+             * Gets transformed texture coordinates based on current rotation and mirroring
+             * @returns {Array} Array of texture coordinates
+             */
+            function getTransformedTexCoords() {
+                let texCoords;
+                switch (rotation % 360) {
+                    case 0:
+                        texCoords = [0, 1, 1, 1, 0, 0, 1, 0];
+                        break;
+                    case 90:
+                        texCoords = [0, 0, 0, 1, 1, 0, 1, 1];
+                        break;
+                    case 180:
+                        texCoords = [1, 0, 0, 0, 1, 1, 0, 1];
+                        break;
+                    case 270:
+                        texCoords = [1, 1, 1, 0, 0, 1, 0, 0];
+                        break;
+                    default:
+                        texCoords = [0, 1, 1, 1, 0, 0, 1, 0];
+                }
+
+                // Apply mirroring
+                if (mirrorX) {
+                    for (let i = 0; i < texCoords.length; i += 2) {
+                        texCoords[i] = 1 - texCoords[i];
+                    }
+                }
+                if (mirrorY) {
+                    for (let i = 1; i < texCoords.length; i += 2) {
+                        texCoords[i] = 1 - texCoords[i];
+                    }
+                }
+
+                // Apply canvas transformations
+                if (image && image.width > 0 && image.height > 0) {
+                    const xScale = canvasState.width / image.width;
+                    const yScale = canvasState.height / image.height;
+                    const xOffset = canvasState.x / image.width;
+                    const yOffset = canvasState.y / image.height;
+
+                    for (let i = 0; i < texCoords.length; i += 2) {
+                        texCoords[i] = texCoords[i] * xScale + xOffset;
+                        texCoords[i + 1] = texCoords[i + 1] * yScale + yOffset;
+                    }
+                }
+                return texCoords;
+            }
+
+            /**
+             * Updates the canvas transform based on current state
+             */
+            function updateTransform() {
+                if (!image) return;
+
+                // Handle rotation
+                if (rotation % 180 === 90) {
+                    canvas.width = canvasState.height;
+                    canvas.height = canvasState.width;
+                } else {
+                    canvas.width = canvasState.width;
+                    canvas.height = canvasState.height;
+                }
+
+                // Update texture coordinates
+                const texCoords = getTransformedTexCoords();
+                gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+                gl.bufferData(
+                    gl.ARRAY_BUFFER,
+                    new Float32Array(texCoords),
+                    gl.STATIC_DRAW,
+                );
+
+                // Update UI
+                $("mirrorX").classList.toggle("active", mirrorX);
+                $("mirrorY").classList.toggle("active", mirrorY);
+
+                updateCanvasDisplay();
+                render();
+                log(
+                    `Transform updated: rotation=${rotation}°, mirrorX=${mirrorX}, mirrorY=${mirrorY}, canvas=(${canvasState.x},${canvasState.y},${canvasState.width},${canvasState.height})`,
+                );
+            }
+
+            /**
+             * Updates the canvas display properties (background, zoom, etc.)
+             */
+            function updateCanvasDisplay() {
+                if (useTransparent) {
+                    // Show checkerboard pattern for transparency
+                    canvasContainer.style.backgroundColor = "transparent";
+                    canvasContainer.style.backgroundImage =
+                        "linear-gradient(45deg, #aaa 25%, transparent 25%), " +
+                        "linear-gradient(-45deg, #aaa 25%, transparent 25%), " +
+                        "linear-gradient(45deg, transparent 75%, #aaa 75%), " +
+                        "linear-gradient(-45deg, transparent 75%, #aaa 75%)";
+                    canvasContainer.style.backgroundSize = "20px 20px";
+                    canvasContainer.style.backgroundPosition =
+                        "0 0, 0 10px, 10px -10px, -10px 0px";
+                } else {
+                    // Solid background
+                    canvasContainer.style.backgroundColor = bgColor;
+                    canvasContainer.style.backgroundImage = "none";
+                }
+
+                // Apply zoom
+                canvas.style.transformOrigin = "center center";
+                canvas.style.transform = `scale(${zoomLevel})`;
+            }
+
+            /**
+             * Starts the rendering loop
+             */
+            function startRendering() {
+                if (animFrame) cancelAnimationFrame(animFrame);
+                function animate() {
+                    render();
+                    animFrame = requestAnimationFrame(animate);
+                }
+                animate();
+            }
+
+            /**
+             * Stops the rendering loop
+             */
+            function stopRendering() {
+                if (animFrame) {
+                    cancelAnimationFrame(animFrame);
+                    animFrame = null;
+                }
+            }
+
+            /**
+             * Renders the current frame
+             */
+            function render() {
+                if (!gl || !program || !imageTexture) return;
+
+                // Set viewport to match canvas size
+                gl.viewport(0, 0, canvas.width, canvas.height);
+
+                // Set clear color based on background settings
+                let r = 0,
+                    g = 0,
+                    b = 0,
+                    a = useTransparent ? 0 : 1;
+                if (!useTransparent && /^#[0-9A-F]{6}$/i.test(bgColor)) {
+                    const hex = bgColor.substring(1);
+                    r = parseInt(hex.substring(0, 2), 16) / 255;
+                    g = parseInt(hex.substring(2, 4), 16) / 255;
+                    b = parseInt(hex.substring(4, 6), 16) / 255;
+                }
+                gl.clearColor(r, g, b, a);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+
+                // Set up shader program
+                gl.useProgram(program);
+
+                // Set up position attribute
+                const posLoc = gl.getAttribLocation(program, "a_position");
+                gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+                gl.enableVertexAttribArray(posLoc);
+                gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+                // Set up texture coordinate attribute
+                const texLoc = gl.getAttribLocation(program, "a_texcoord");
+                gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+                gl.enableVertexAttribArray(texLoc);
+                gl.vertexAttribPointer(texLoc, 2, gl.FLOAT, false, 0, 0);
+
+                // Set up texture
+                const texLocation = gl.getUniformLocation(program, "tex");
+                gl.uniform1i(texLocation, 0);
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+
+                // Set time uniform if shader uses it
+                const timeLoc = gl.getUniformLocation(program, "time");
+                if (timeLoc) {
+                    if (timePaused && pausedTime !== null) {
+                        gl.uniform1f(timeLoc, pausedTime);
+                    } else {
+                        gl.uniform1f(
+                            timeLoc,
+                            (Date.now() - startTime) / 1000.0,
+                        );
+                    }
+                }
+
+                // Set blending for transparent backgrounds
+                if (useTransparent) {
+                    gl.enable(gl.BLEND);
+                    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+                } else {
+                    gl.disable(gl.BLEND);
+                }
+
+                // Draw the quad
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            }
+
+            // ==================== EXPORT FUNCTIONS ====================
+
+            /**
+             * Saves the current canvas as an image
+             * @param {string} type - Image type ('png' or 'jpeg')
+             */
+            function saveImage(type) {
+                if (!canvas) return;
+                try {
+                    // Ensure rendering is complete
+                    render();
+                    gl.finish();
+
+                    const mimeType =
+                        type === "png" ? "image/png" : "image/jpeg";
+                    const quality = type === "png" ? undefined : 0.9;
+
+                    // Create temporary canvas for export
+                    const tempCanvas = document.createElement("canvas");
+                    tempCanvas.width = canvas.width;
+                    tempCanvas.height = canvas.height;
+                    const tempCtx = tempCanvas.getContext("2d", {
+                        alpha: useExportAlpha,
+                    });
+
+                    // Fill background if not exporting with alpha
+                    if (!useExportAlpha) {
+                        tempCtx.fillStyle = bgColor;
+                        tempCtx.fillRect(
+                            0,
+                            0,
+                            tempCanvas.width,
+                            tempCanvas.height,
+                        );
+                    }
+
+                    // Draw WebGL canvas to 2D canvas
+                    tempCtx.drawImage(canvas, 0, 0);
+
+                    // Create download link
+                    const imageData = tempCanvas.toDataURL(mimeType, quality);
+                    const link = document.createElement("a");
+                    link.download = `shader_output.${type === "png" ? "png" : "jpg"}`;
+                    link.href = imageData;
+                    link.click();
+
+                    log(`Image saved as ${type.toUpperCase()}`);
+                } catch (error) {
+                    log(`Error saving image: ${error}`, "error");
+                }
+            }
+
+            /**
+             * Exports an animation as WebM video
+             * @param {string} type - Currently only 'webm' is supported
+             */
+            function exportAnimation(type) {
+                if (!canvas) {
+                    log("No canvas to export!", "error");
+                    return;
+                }
+
+                if (type === "webm") {
+                    try {
+                        // Get export settings from UI
+                        const duration =
+                            parseFloat($("animationDuration").value) || 5;
+                        const fps = parseInt($("exportFps").value) || 30;
+                        const startTime =
+                            parseFloat($("exportStartTime").value) || 0;
+                        const bitrate = parseInt($("exportBitrate").value) || 5;
+
+                        log(
+                            `Starting animation export: ${duration * fps} frames at ${fps} fps, starting at ${startTime}s...`,
+                        );
+
+                        // Pause time for consistent export
+                        timePaused = true;
+                        pausedTime = startTime;
+
+                        // Set up MediaRecorder
+                        const stream = canvas.captureStream(fps);
+                        const recorder = new MediaRecorder(stream, {
+                            mimeType: "video/webm",
+                            videoBitsPerSecond: bitrate * 1000000,
+                        });
+
+                        // Collect video chunks
+                        const chunks = [];
+                        recorder.ondataavailable = (e) => chunks.push(e.data);
+                        recorder.onstop = () => {
+                            const blob = new Blob(chunks, {
+                                type: "video/webm",
+                            });
+                            const url = URL.createObjectURL(blob);
+
+                            // Create download link
+                            const link = document.createElement("a");
+                            link.href = url;
+                            link.download = "shader_animation.webm";
+                            link.click();
+
+                            log("Animation exported as WebM");
+                            log(`Download links: [WebM](${url})`);
+
+                            // Resume normal operation
+                            timePaused = false;
+                            startTime = Date.now();
+                            log("Export complete!");
+                        };
+
+                        recorder.start();
+
+                        // Render frames for animation
+                        let currentTime = startTime;
+                        const endTime = startTime + duration;
+                        const frameInterval = 1000 / fps;
+
+                        function renderFrame() {
+                            if (currentTime >= endTime) {
+                                recorder.stop();
+                                return;
+                            }
+
+                            pausedTime = currentTime;
+                            render();
+                            currentTime += frameInterval / 1000;
+                            setTimeout(renderFrame, frameInterval);
+                        }
+
+                        renderFrame();
+                    } catch (error) {
+                        log(`Error exporting animation: ${error}`, "error");
+                        timePaused = false;
+                    }
+                }
+            }
+
+            // ==================== FULLSCREEN PREVIEW ====================
+
+            /**
+             * Opens the fullscreen preview
+             */
+            function openFullscreenPreview() {
+                if (!image) return;
+
+                fsContainer.style.display = "flex";
+                fsTimePaused = false;
+                $("fullscreenPauseTime").textContent = "Pause Animation";
+
+                fsCanvas.width = canvas.width;
+                fsCanvas.height = canvas.height;
+
+                // Initialize WebGL context if not already done
+                if (!fsGl) {
+                    fsGl = fsCanvas.getContext("webgl");
+                    if (!fsGl) {
+                        log(
+                            "Failed to initialize WebGL for fullscreen preview",
+                            "error",
+                        );
+                        return;
+                    }
+                }
+
+                setupFullscreenCanvas();
+                animateFullscreen();
+            }
+
+            /**
+             * Renders the fullscreen preview animation
+             */
+            function animateFullscreen() {
+                if (fsTimePaused) return;
+                renderFullscreen();
+                fsAnimFrame = requestAnimationFrame(animateFullscreen);
+            }
+
+            /**
+             * Sets up the fullscreen canvas with shaders
+             */
+            function setupFullscreenCanvas() {
+                // Ensure fsGl context exists
+                if (!fsGl) {
+                    log("Fullscreen WebGL context not available.", "error");
+                    closeFullscreenPreview(); // Exit if no context
+                    return;
+                }
+
+                const vertexSource = $("vertexShader").textContent;
+                const customFragmentSource = codeTextarea.value.trim();
+                const defaultFragmentSource = $(
+                    "defaultFragmentShader",
+                ).textContent;
+
+                let fragmentSourceToUse;
+
+                // Determine which fragment shader source to use
+                if (shaderActive && customFragmentSource) {
+                    // Use custom shader if it's active and the editor isn't empty
+                    fragmentSourceToUse = customFragmentSource;
+                    log("Fullscreen: Using custom shader from editor.");
+                } else {
+                    // Otherwise, use the default pass-through shader
+                    fragmentSourceToUse = defaultFragmentSource;
+                    if (!shaderActive) {
+                        log(
+                            "Fullscreen: Shader inactive, using default pass-through.",
+                        );
+                    } else {
+                        log(
+                            "Fullscreen: Editor empty, using default pass-through.",
+                        );
+                    }
+                }
+
+                // Create shaders
+                const vertexShader = createShader(
+                    fsGl,
+                    fsGl.VERTEX_SHADER,
+                    vertexSource,
+                );
+                const fragmentShader = createShader(
+                    fsGl,
+                    fsGl.FRAGMENT_SHADER,
+                    fragmentSourceToUse, // Use the correctly chosen source
+                );
+
+                // Check for shader creation errors
+                if (!vertexShader || !fragmentShader) {
+                    log(
+                        "Fullscreen: Failed to create shaders. Cannot display preview.",
+                        "error",
+                    );
+                    closeFullscreenPreview(); // Exit if shaders fail
+                    return;
+                }
+
+                // Create program
+                const fsProgram = createProgram(
+                    fsGl,
+                    vertexShader,
+                    fragmentShader,
+                );
+
+                // Check for program linking errors
+                if (!fsProgram) {
+                    log(
+                        "Fullscreen: Failed to link program. Cannot display preview.",
+                        "error",
+                    );
+                    // Clean up shaders if program linking failed
+                    fsGl.deleteShader(vertexShader);
+                    fsGl.deleteShader(fragmentShader);
+                    closeFullscreenPreview(); // Exit if program fails
+                    return;
+                }
+
+                // --- Program linked successfully, continue setup ---
+                fsGl.useProgram(fsProgram);
+
+                // Set up position buffer
+                const posBuffer = fsGl.createBuffer();
+                fsGl.bindBuffer(fsGl.ARRAY_BUFFER, posBuffer);
+                fsGl.bufferData(
+                    fsGl.ARRAY_BUFFER,
+                    new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+                    fsGl.STATIC_DRAW,
+                );
+
+                // Set up texture coordinates (using the same logic as the main canvas)
+                const texCoords = getTransformedTexCoords();
+                const texBuffer = fsGl.createBuffer();
+                fsGl.bindBuffer(fsGl.ARRAY_BUFFER, texBuffer);
+                fsGl.bufferData(
+                    fsGl.ARRAY_BUFFER,
+                    new Float32Array(texCoords),
+                    fsGl.STATIC_DRAW,
+                );
+
+                // Set up attributes
+                const posLoc = fsGl.getAttribLocation(fsProgram, "a_position");
+                const texLoc = fsGl.getAttribLocation(fsProgram, "a_texcoord");
+
+                fsGl.bindBuffer(fsGl.ARRAY_BUFFER, posBuffer);
+                fsGl.enableVertexAttribArray(posLoc);
+                fsGl.vertexAttribPointer(posLoc, 2, fsGl.FLOAT, false, 0, 0);
+
+                fsGl.bindBuffer(fsGl.ARRAY_BUFFER, texBuffer);
+                fsGl.enableVertexAttribArray(texLoc);
+                fsGl.vertexAttribPointer(texLoc, 2, fsGl.FLOAT, false, 0, 0);
+
+                // Set up texture
+                // Important: Need to create a *new* texture for the fsGl context
+                const fsTexture = fsGl.createTexture();
+                fsGl.bindTexture(fsGl.TEXTURE_2D, fsTexture);
+
+                fsGl.texParameteri(
+                    fsGl.TEXTURE_2D,
+                    fsGl.TEXTURE_WRAP_S,
+                    fsGl.CLAMP_TO_EDGE,
+                );
+                fsGl.texParameteri(
+                    fsGl.TEXTURE_2D,
+                    fsGl.TEXTURE_WRAP_T,
+                    fsGl.CLAMP_TO_EDGE,
+                );
+                fsGl.texParameteri(
+                    fsGl.TEXTURE_2D,
+                    fsGl.TEXTURE_MIN_FILTER,
+                    fsGl.LINEAR,
+                );
+                fsGl.texParameteri(
+                    fsGl.TEXTURE_2D,
+                    fsGl.TEXTURE_MAG_FILTER,
+                    fsGl.LINEAR,
+                );
+
+                // Upload the *same image data* to the new texture
+                if (image) {
+                    fsGl.texImage2D(
+                        fsGl.TEXTURE_2D,
+                        0,
+                        fsGl.RGBA,
+                        fsGl.RGBA,
+                        fsGl.UNSIGNED_BYTE,
+                        image,
+                    );
+                } else {
+                    // Handle case where there's no image? Maybe show black or checkerboard?
+                    // For now, just log it. The preview won't work without an image anyway.
+                    log(
+                        "Fullscreen: No image loaded, texture will be empty.",
+                        "warning",
+                    );
+                }
+
+                // Set texture uniform
+                const texUnitLoc = fsGl.getUniformLocation(fsProgram, "tex");
+                fsGl.uniform1i(texUnitLoc, 0); // Use texture unit 0
+
+                // Set time uniform (initial value)
+                const timeLoc = fsGl.getUniformLocation(fsProgram, "time");
+                if (timeLoc) {
+                    let initialTime = 0;
+                    if (timePaused && pausedTime !== null) {
+                        initialTime = pausedTime;
+                    } else {
+                        // Use the same basis as the main animation loop
+                        initialTime = (Date.now() - startTime) / 1000.0;
+                    }
+                    fsGl.uniform1f(timeLoc, initialTime);
+                    log(`Fullscreen: Initial time set to ${initialTime}`);
+                } else {
+                    log("Fullscreen: Shader does not use 'time' uniform.");
+                }
+
+                // No need to delete shaders immediately if linking was successful,
+                // they are attached to the program. They can be deleted after linking.
+                fsGl.deleteShader(vertexShader);
+                fsGl.deleteShader(fragmentShader);
+
+                log("Fullscreen canvas setup complete.");
+            }
+
+            /**
+             * Renders a single frame in fullscreen mode
+             */
+            function renderFullscreen() {
+                if (!fsGl) return;
+
+                fsGl.viewport(0, 0, fsCanvas.width, fsCanvas.height);
+
+                // Set clear color
+                let r = 0,
+                    g = 0,
+                    b = 0,
+                    a = useTransparent ? 0 : 1;
+                if (!useTransparent && /^#[0-9A-F]{6}$/i.test(bgColor)) {
+                    const hex = bgColor.substring(1);
+                    r = parseInt(hex.substring(0, 2), 16) / 255;
+                    g = parseInt(hex.substring(2, 4), 16) / 255;
+                    b = parseInt(hex.substring(4, 6), 16) / 255;
+                }
+
+                fsGl.clearColor(r, g, b, a);
+                fsGl.clear(fsGl.COLOR_BUFFER_BIT);
+
+                // Update time uniform if needed
+                const program = fsGl.getParameter(fsGl.CURRENT_PROGRAM);
+                const timeLoc = fsGl.getUniformLocation(program, "time");
+                if (timeLoc) {
+                    if (fsTimePaused) {
+                        const currentTime = fsGl.getUniform(program, timeLoc);
+                        fsGl.uniform1f(timeLoc, currentTime);
+                    } else if (timePaused && pausedTime !== null) {
+                        fsGl.uniform1f(timeLoc, pausedTime);
+                    } else {
+                        fsGl.uniform1f(
+                            timeLoc,
+                            (Date.now() - startTime) / 1000.0,
+                        );
+                    }
+                }
+
+                // Draw the quad
+                fsGl.drawArrays(fsGl.TRIANGLE_STRIP, 0, 4);
+            }
+
+            /**
+             * Closes the fullscreen preview
+             */
+            function closeFullscreenPreview() {
+                fsContainer.style.display = "none";
+                if (fsAnimFrame) {
+                    cancelAnimationFrame(fsAnimFrame);
+                    fsAnimFrame = null;
+                }
+            }
+
+            // ==================== HISTORY MANAGEMENT ====================
+
+            /**
+             * Saves current state to history
+             */
+            function saveToHistory() {
+                const newState = {
+                    shaderCode: codeTextarea.value,
+                    rotation,
+                    mirrorX,
+                    mirrorY,
+                    canvas: { ...canvasState },
+                    bgColor,
+                    useTransparent,
+                };
+
+                // Truncate history if we've undone some actions
+                if (historyIndex < history.length - 1) {
+                    history = history.slice(0, historyIndex + 1);
+                }
+
+                history.push(newState);
+                historyIndex = history.length - 1;
+
+                // Limit history size
+                if (history.length > maxHistory) {
+                    history.shift();
+                    historyIndex--;
+                }
+
+                updateHistoryBtns();
+            }
+
+            /**
+             * Updates undo/redo button states
+             */
+            function updateHistoryBtns() {
+                $("undoButton").disabled = historyIndex <= 0;
+                $("redoButton").disabled = historyIndex >= history.length - 1;
+            }
+
+            /**
+             * Applies a state from history
+             * @param {Object} state - The state to apply
+             */
+            function applyHistoryState(state) {
+                codeTextarea.value = state.shaderCode;
+                rotation = state.rotation;
+                mirrorX = state.mirrorX;
+                mirrorY = state.mirrorY;
+                canvasState = { ...state.canvas };
+                bgColor = state.bgColor;
+                useTransparent = state.useTransparent;
+
+                // Update UI to match state
+                transCanvas.checked = useTransparent;
+                bgColorInput.value = bgColor;
+                bgColorPreview.style.backgroundColor = bgColor;
+
+                updateRotationUI();
+                updateCanvasUI();
+                compileShader();
+                updateTransform();
+                updateCanvasDisplay();
+            }
+
+            // ==================== SAVE SLOTS ====================
+
+            /**
+             * Initializes save slot functionality
+             */
+            function initSaveSlots() {
+                const saveSlots = document.querySelectorAll(".save-slot");
+                let activeSlot = null;
+
+                saveSlots.forEach((slot) => {
+                    const slotNum = slot.dataset.slot;
+
+                    // Set initial state
+                    slot.textContent = `Slot ${slotNum}`;
+                    slot.dataset.state = "default"; // Possible states: default, confirm_save, confirm_load, confirm_clear, finish
+                    let timer = null;
+
+                    /**
+                     * Resets slot to default state
+                     */
+                    function resetSlot() {
+                        slot.textContent = `Slot ${slotNum}`;
+                        slot.dataset.state = "default";
+                        timer = null;
+                    }
+
+                    // Left-click handler
+                    slot.addEventListener("click", (e) => {
+                        e.preventDefault();
+
+                        // Handle clear confirmation abort
+                        if (slot.dataset.state === "confirm_clear") {
+                            if (timer) clearTimeout(timer);
+                            slot.textContent = "aborted";
+                            slot.dataset.state = "finish";
+                            timer = setTimeout(resetSlot, 1000);
+                            return;
+                        }
+
+                        // Default state behavior
+                        if (slot.dataset.state === "default") {
+                            // Check if slot has saved content
+                            if (
+                                localStorage.getItem(
+                                    `glsl-shader-slot-${slotNum}`,
+                                )
+                            ) {
+                                slot.textContent = "load?";
+                                slot.dataset.state = "confirm_load";
+                            } else {
+                                slot.textContent = "save?";
+                                slot.dataset.state = "confirm_save";
+                            }
+                            timer = setTimeout(resetSlot, 3000);
+                            return;
+                        }
+
+                        // Confirm save
+                        if (slot.dataset.state === "confirm_save") {
+                            if (timer) clearTimeout(timer);
+                            localStorage.setItem(
+                                `glsl-shader-slot-${slotNum}`,
+                                codeTextarea.value,
+                            );
+                            slot.textContent = "saved!";
+                            slot.dataset.state = "finish";
+                            timer = setTimeout(resetSlot, 1000);
+                            return;
+                        }
+
+                        // Confirm load
+                        if (slot.dataset.state === "confirm_load") {
+                            if (timer) clearTimeout(timer);
+                            const savedContent = localStorage.getItem(
+                                `glsl-shader-slot-${slotNum}`,
+                            );
+                            if (savedContent) {
+                                codeTextarea.value = savedContent;
+                            }
+                            slot.textContent = "loaded!";
+                            // Update active slot
+                            saveSlots.forEach((s) =>
+                                s.classList.remove("active"),
+                            );
+                            slot.classList.add("active");
+                            activeSlot = slotNum;
+                            slot.dataset.state = "finish";
+                            timer = setTimeout(resetSlot, 1000);
+                            return;
+                        }
+                    });
+
+                    // Right-click handler
+                    slot.addEventListener("contextmenu", (e) => {
+                        e.preventDefault();
+
+                        // Abort any pending save/load confirmation
+                        if (
+                            slot.dataset.state === "confirm_save" ||
+                            slot.dataset.state === "confirm_load"
+                        ) {
+                            if (timer) clearTimeout(timer);
+                            slot.textContent = "aborted";
+                            slot.dataset.state = "finish";
+                            timer = setTimeout(resetSlot, 1000);
+                            return;
+                        }
+
+                        // Default state - start clear confirmation
+                        if (slot.dataset.state === "default") {
+                            slot.textContent = "clear?";
+                            slot.dataset.state = "confirm_clear";
+                            timer = setTimeout(resetSlot, 3000);
+                            return;
+                        }
+
+                        // Confirm clear
+                        if (slot.dataset.state === "confirm_clear") {
+                            if (timer) clearTimeout(timer);
+                            localStorage.removeItem(
+                                `glsl-shader-slot-${slotNum}`,
+                            );
+                            slot.textContent = "cleared!";
+                            slot.dataset.state = "finish";
+                            // Update active slot if needed
+                            slot.classList.remove("active");
+                            if (activeSlot === slotNum) {
+                                activeSlot = null;
+                            }
+                            timer = setTimeout(resetSlot, 1000);
+                            return;
+                        }
+                    });
+                });
+            }
+
+            // ==================== UI UPDATERS ====================
+
+            /**
+             * Updates rotation UI to reflect current state
+             */
+            function updateRotationUI() {
+                document
+                    .querySelectorAll(".rotation-preset")
+                    .forEach((preset) => {
+                        if (parseInt(preset.dataset.rotation) === rotation) {
+                            preset.classList.add("active");
+                        } else {
+                            preset.classList.remove("active");
+                        }
+                    });
+            }
+
+            /**
+             * Updates canvas UI inputs to reflect current state
+             */
+            function updateCanvasUI() {
+                $("canvasX").value = canvasState.x;
+                $("canvasY").value = canvasState.y;
+                $("canvasWidth").value = canvasState.width;
+                $("canvasHeight").value = canvasState.height;
+            }
+
+            /**
+             * Updates zoom slider appearance
+             */
+            function updateSliderAppearance() {
+                zoomLevel = parseFloat(zoomSlider.value);
+                zoomInput.value = zoomLevel;
+                zoomValue.textContent = `${zoomLevel.toFixed(1)}x`;
+
+                // Calculate gradient for slider
+                const min = parseFloat(zoomSlider.min);
+                const max = parseFloat(zoomSlider.max);
+                const value = zoomLevel;
+                const sliderWidth = zoomSlider.clientWidth;
+                const thumbSize = 20;
+                const centerPosition =
+                    ((value - min) / (max - min)) * (sliderWidth - thumbSize) +
+                    thumbSize / 2;
+                const centerPercentage = (centerPosition / sliderWidth) * 100;
+
+                zoomSlider.style.background = `linear-gradient(
+                    to right,
+                    var(--btn-active) 0%,
+                    var(--btn-active) ${centerPercentage}%,
+                    var(--slider-color) ${centerPercentage}%,
+                    var(--slider-color) 100%
+                )`;
+
+                updateCanvasDisplay();
+            }
+
+            // ==================== EVENT LISTENERS ====================
+
+            // Initialize WebGL
+            if (!gl) {
+                log("WebGL not supported!", "error");
+            } else {
+                log("WebGL initialized successfully");
+                initWebGL();
+            }
+
+            // Initialize save slots
+            initSaveSlots();
+
+            // Initialize slider appearance
+            updateSliderAppearance();
+
+            // External image URL handling
+            externalImageUrl.addEventListener("input", () => {
+                const url = externalImageUrl.value.trim();
+                const isValid = url.match(/\.(jpeg|jpg|gif|png|webp)$/) != null;
+
+                if (isValid) {
+                    loadImageByUrl.style.display = "inline-block";
+                    clearExternalUrl.style.display = "none";
+                } else {
+                    loadImageByUrl.style.display = "none";
+                    clearExternalUrl.style.display = "none";
+                }
+            });
+
+            externalImageUrl.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.keyCode === 13) {
+                    e.preventDefault();
+                    if (loadImageByUrl.style.display === "inline-block") {
+                        loadImageByUrl.click();
+                    }
+                }
+            });
+
+            // Load external image
+            loadImageByUrl.addEventListener("click", async () => {
+                const url = externalImageUrl.value.trim();
+                try {
+                    // Test load first
+                    const testImg = new Image();
+                    testImg.onerror = () => {
+                        throw new Error("Failed to load image");
+                    };
+
+                    await new Promise((resolve, reject) => {
+                        testImg.onload = resolve;
+                        testImg.onerror = reject;
+                        testImg.src = url;
+                    });
+
+                    // If test succeeds, load actual image
+                    const img = new Image();
+                    img.crossOrigin = "Anonymous";
+                    img.onload = () => {
+                        image = img;
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+
+                        canvasState = {
+                            x: 0,
+                            y: 0,
+                            width: img.width,
+                            height: img.height,
+                        };
+
+                        updateCanvasUI();
+                        createImageTexture();
+                        initBuffers();
+                        updateCanvasDisplay();
+                        startRendering();
+                        saveToHistory();
+
+                        // Update UI
+                        loadImageByUrl.style.display = "none";
+                        clearExternalUrl.style.display = "inline-block";
+                        updateImageButtons();
+                        log(`External image loaded from URL: ${url}`);
+                    };
+                    img.onerror = () => {
+                        log(`Error loading image from URL: ${url}`, "error");
+                    };
+                    img.src = url;
+                } catch (err) {
+                    log(`Error loading image: ${err.message}`, "error");
+                }
+            });
+
+            // Clear external URL
+            clearExternalUrl.addEventListener("click", () => {
+                externalImageUrl.value = "";
+                loadImageByUrl.style.display = "none";
+                clearExternalUrl.style.display = "none";
+
+                // Unload current external image if needed
+                if (image && image.src === externalImageUrl.value.trim()) {
+                    image = null;
+                    updateImageButtons();
+                    log("External image unloaded");
+                }
+            });
+
+            // Drag and drop support
+            document.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                canvasContainer.classList.add("drag-over");
+            });
+
+            document.addEventListener("dragleave", () => {
+                canvasContainer.classList.remove("drag-over");
+            });
+
+            document.addEventListener("drop", (e) => {
+                e.preventDefault();
+                canvasContainer.classList.remove("drag-over");
+
+                const dt = e.dataTransfer;
+                if (dt.files.length > 0) {
+                    handleImageFile(dt.files[0]);
+                } else if (dt.items) {
+                    // Handle pasted images from clipboard
+                    for (let i = 0; i < dt.items.length; i++) {
+                        if (
+                            dt.items[i].kind === "file" &&
+                            dt.items[i].type.match("^image/")
+                        ) {
+                            handleImageFile(dt.items[i].getAsFile());
+                            break;
+                        }
+                    }
+                }
+            });
+
+            // Paste support
+            document.addEventListener("paste", (e) => {
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf("image") !== -1) {
+                        const blob = items[i].getAsFile();
+                        handleImageFile(blob);
+                        break;
+                    }
+                }
+            });
+
+            // File input handling
+            $("loadImage").addEventListener("click", () =>
+                $("imageInput").click(),
+            );
+            $("imageInput").addEventListener("change", (e) => {
+                if (e.target.files.length > 0) {
+                    handleImageFile(e.target.files[0]);
+                }
+            });
+
+            // Shader file loading
+            $("loadShader").addEventListener("click", () =>
+                $("shaderInput").click(),
+            );
+            $("shaderInput").addEventListener("change", (e) => {
+                if (e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        codeTextarea.value = evt.target.result;
+                        log(`Shader loaded: ${file.name}`);
+                        saveToHistory();
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            // Save current slot
+            $("saveCurrentSlot").addEventListener("click", () => {
+                const activeSlot = document.querySelector(".save-slot.active");
+                if (activeSlot) {
+                    const slotNum = activeSlot.dataset.slot;
+                    localStorage.setItem(
+                        `glsl-shader-slot-${slotNum}`,
+                        codeTextarea.value,
+                    );
+                    log(`Saved shader to slot ${slotNum}`);
+                } else {
+                    localStorage.setItem("glsl-shader", codeTextarea.value);
+                    log("No slot selected. Shader saved to general storage.");
+                }
+            });
+
+            // Time control
+            $("pauseTime").addEventListener("click", () => {
+                timePaused = !timePaused;
+
+                if (timePaused) {
+                    pausedTime = (Date.now() - startTime) / 1000.0;
+                    $("pauseTime").classList.add("active");
+                    $("pauseTime").textContent = "Resume Time";
+                } else {
+                    pausedTime = null;
+                    startTime = Date.now();
+                    $("pauseTime").classList.remove("active");
+                    $("pauseTime").textContent = "Pause Time";
+                }
+
+                log(`Time ${timePaused ? "paused" : "resumed"}`);
+            });
+
+            // Fullscreen controls
+            $("fullscreenPreview").addEventListener(
+                "click",
+                openFullscreenPreview,
+            );
+            $("fullscreenPauseTime").addEventListener("click", () => {
+                fsTimePaused = !fsTimePaused;
+                $("fullscreenPauseTime").textContent = fsTimePaused
+                    ? "Resume Animation"
+                    : "Pause Animation";
+
+                if (fsGl) {
+                    if (fsAnimFrame) cancelAnimationFrame(fsAnimFrame);
+                    if (!fsTimePaused) {
+                        animateFullscreen();
+                    } else {
+                        renderFullscreen();
+                    }
+                }
+            });
+
+            // Exit fullscreen
+            document
+                .querySelector(".exit-fullscreen")
+                .addEventListener("click", closeFullscreenPreview);
+            fsContainer.addEventListener("click", (e) => {
+                if (e.target === fsContainer) closeFullscreenPreview();
+            });
+
+            // Escape key to exit fullscreen
+            document.addEventListener("keydown", (e) => {
+                if (
+                    e.key === "Escape" &&
+                    fsContainer.style.display !== "none"
+                ) {
+                    closeFullscreenPreview();
+                }
+            });
+
+            // Shader controls
+            $("updateShader").addEventListener("click", () => {
+                compileShader();
+                render();
+                saveToHistory();
+                log("Shader updated!");
+            });
+
+            $("toggleShader").addEventListener("click", () => {
+                shaderActive = !shaderActive;
+                if (shaderActive) {
+                    log("Shader toggled on.");
+                    compileShader();
+                } else {
+                    log("Shader toggled off.");
+                    compileDefaultShader();
+                }
+                render();
+            });
+
+            // Image export
+            $("savePNG").addEventListener("click", () => saveImage("png"));
+            $("saveJPG").addEventListener("click", () => saveImage("jpeg"));
+            $("exportMp4").addEventListener("click", () =>
+                exportAnimation("webm"),
+            );
+
+            // Transform controls
+            document.querySelectorAll(".rotation-preset").forEach((preset) => {
+                preset.addEventListener("click", () => {
+                    rotation = parseInt(preset.dataset.rotation);
+                    updateRotationUI();
+                    updateTransform();
+                    saveToHistory();
+                });
+            });
+
+            $("resetRotation").addEventListener("click", () => {
+                rotation = 0;
+                updateRotationUI();
+                updateTransform();
+                saveToHistory();
+            });
+
+            $("resetMirror").addEventListener("click", () => {
+                mirrorX = mirrorY = false;
+                updateTransform();
+                saveToHistory();
+            });
+
+            $("resetCanvas").addEventListener("click", () => {
+                if (image) {
+                    canvasState = {
+                        x: 0,
+                        y: 0,
+                        width: image.width,
+                        height: image.height,
+                    };
+                    updateCanvasUI();
+                    updateTransform();
+                    saveToHistory();
+                }
+            });
+
+            $("resetAspect").addEventListener("click", () => {
+                $("aspectW").value = 16;
+                $("aspectH").value = 9;
+            });
+
+            $("applyAspect").addEventListener("click", () => {
+                const aspectW = parseFloat($("aspectW").value) || 16;
+                const aspectH = parseFloat($("aspectH").value) || 9;
+
+                if (image) {
+                    const targetRatio = aspectW / aspectH;
+                    const imgRatio = canvasState.width / canvasState.height;
+
+                    if (imgRatio > targetRatio) {
+                        const newWidth = canvasState.height * targetRatio;
+                        const deltaX = (canvasState.width - newWidth) / 2;
+                        canvasState.x += deltaX;
+                        canvasState.width = newWidth;
+                    } else {
+                        const newHeight = canvasState.width / targetRatio;
+                        const deltaY = (canvasState.height - newHeight) / 2;
+                        canvasState.y += deltaY;
+                        canvasState.height = newHeight;
+                    }
+
+                    updateCanvasUI();
+                    updateTransform();
+                    saveToHistory();
+                }
+            });
+
+            $("mirrorX").addEventListener("click", () => {
+                mirrorX = !mirrorX;
+                $("mirrorX").classList.toggle("active", mirrorX);
+                updateTransform();
+                saveToHistory();
+            });
+
+            $("mirrorY").addEventListener("click", () => {
+                mirrorY = !mirrorY;
+                $("mirrorY").classList.toggle("active", mirrorY);
+                updateTransform();
+                saveToHistory();
+            });
+
+            // Canvas position controls
+            ["canvasX", "canvasY", "canvasWidth", "canvasHeight"].forEach(
+                (id) => {
+                    $(id).addEventListener("change", () => {
+                        canvasState.x = parseFloat($("canvasX").value) || 0;
+                        canvasState.y = parseFloat($("canvasY").value) || 0;
+                        canvasState.width =
+                            parseFloat($("canvasWidth").value) ||
+                            image?.width ||
+                            0;
+                        canvasState.height =
+                            parseFloat($("canvasHeight").value) ||
+                            image?.height ||
+                            0;
+                        updateTransform();
+                        saveToHistory();
+                    });
+                },
+            );
+
+            // Background controls
+            bgColorInput.addEventListener("input", () => {
+                const color = bgColorInput.value;
+                if (/^#[0-9A-F]{6}$/i.test(color)) {
+                    bgColorPreview.style.backgroundColor = color;
+                }
+            });
+
+            $("applyBackground").addEventListener("click", () => {
+                const color = bgColorInput.value;
+                if (/^#[0-9A-F]{6}$/i.test(color)) {
+                    bgColor = color;
+                    updateCanvasDisplay();
+                    log(`Canvas background set to ${color}`);
+                    saveToHistory();
+                } else {
+                    log(
+                        "Invalid hex color format. Use #RRGGBB format.",
+                        "error",
+                    );
+                }
+            });
+
+            // Transparency controls
+            transCanvas.addEventListener("change", () => {
+                useTransparent = transCanvas.checked;
+                updateCanvasDisplay();
+                render();
+                saveToHistory();
+            });
+
+            exportAlpha.addEventListener("change", () => {
+                useExportAlpha = exportAlpha.checked;
+            });
+
+            // Zoom controls
+            zoomSlider.addEventListener("input", updateSliderAppearance);
+            zoomInput.addEventListener("input", () => {
+                zoomLevel = parseFloat(zoomInput.value);
+                zoomSlider.value = zoomLevel;
+                zoomValue.textContent = `${zoomLevel.toFixed(1)}x`;
+                updateCanvasDisplay();
+            });
+
+            $("resetZoom").addEventListener("click", () => {
+                zoomLevel = 1;
+                zoomSlider.value = 1;
+                zoomInput.value = 1;
+                zoomValue.textContent = "1x";
+                updateSliderAppearance();
+            });
+
+            // Reset all parameters
+            $("resetAllParams").addEventListener("click", () => {
+                rotation = 0;
+                mirrorX = mirrorY = false;
+                if (image) {
+                    canvasState = {
+                        x: 0,
+                        y: 0,
+                        width: image.width,
+                        height: image.height,
+                    };
+                }
+
+                bgColor = "#000000";
+                useTransparent = false;
+                bgColorInput.value = bgColor;
+                bgColorPreview.style.backgroundColor = bgColor;
+                transCanvas.checked = false;
+
+                zoomLevel = 1;
+                zoomSlider.value = 1;
+                zoomInput.value = 1;
+                zoomValue.textContent = "1x";
+
+                updateRotationUI();
+                updateCanvasUI();
+                updateTransform();
+                updateCanvasDisplay();
+                saveToHistory();
+                log("All parameters reset to defaults");
+            });
+
+            // History controls
+            $("undoButton").addEventListener("click", () => {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    applyHistoryState(history[historyIndex]);
+                    updateHistoryBtns();
+                }
+            });
+
+            $("redoButton").addEventListener("click", () => {
+                if (historyIndex < history.length - 1) {
+                    historyIndex++;
+                    applyHistoryState(history[historyIndex]);
+                    updateHistoryBtns();
+                }
+            });
+
+            // Unload image
+            $("unloadImage").addEventListener("click", () => {
+                image = null;
+                imageTexture = null;
+                gl.clearColor(0, 0, 0, 1);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                canvasState = {
+                    x: 0,
+                    y: 0,
+                    width: canvas.width,
+                    height: canvas.height,
+                };
+                log("Image unloaded.");
+                updateImageButtons();
+            });
+
+            // Initialize WebGL
+            function initWebGL() {
+                const vertexShader = createShader(
+                    gl,
+                    gl.VERTEX_SHADER,
+                    $("vertexShader").textContent,
+                );
+                const fragmentShader = createShader(
+                    gl,
+                    gl.FRAGMENT_SHADER,
+                    $("defaultFragmentShader").textContent,
+                );
+                program = createProgram(gl, vertexShader, fragmentShader);
+                initBuffers();
+                saveToHistory();
+            }
+
+            // Start rendering
+            startRendering();
+            updateRotationUI();
+            updateHistoryBtns();
+            updateImageButtons();
+        </script>
+    </body>
+</html>
