@@ -18,7 +18,7 @@
                 --btn: #ff99b21f;
                 --btn-hover: #ff99b252;
                 --btn-active: #ffc2d1;
-                --btn-active-text-color: #000000;
+                --btn-active-text-color: #1e0b10;
                 --btn-danger: #ff477552;
                 --btn-danger-hover: #ff477552;
                 --btn-danger-text: #ff99b2;
@@ -27,15 +27,34 @@
                 --h2-color: #ffc2d1;
                 --h3-color: #ffc2d1;
                 --slider-color: var(--btn-hover);
-                --btn-border-active: #ffcc00;
+                --btn-border-active: #ff99b2;
                 --label-color: var(--text);
 
                 /* ==================== FORM CONTROLS ==================== */
-                --checkbox-border: var(--border);
-                --checkbox-size: 20px;
-                --checkbox-hover: var(--btn-hover);
-                --slider-track: #444;
-                --slider-thumb-size: 20px;
+                textarea,
+                input {
+                    background-color: var(--bg-panel);
+                    color: var(--text);
+                    border: var(--border-thickness) solid var(--border-input);
+                    border-radius: var(--border-radius);
+                    padding: 8px;
+                    width: 100%;
+                    box-sizing: border-box;
+                    font-family: monospace;
+                    transition: border-color 0.2s ease-in-out;
+                }
+
+                textarea:focus,
+                input[type="text"]:focus,
+                input[type="number"]:focus,
+                input[type="file"]:focus {
+                    outline: none;
+                    border-color: var(--btn-border-active);
+                }
+
+                label {
+                    color: var(--label-color);
+                }
 
                 /* ==================== FULLSCREEN ==================== */
                 --fullscreen-bg: rgba(0, 0, 0, 0.9);
@@ -43,8 +62,8 @@
                 --exit-btn-hover-bg: rgba(30, 30, 30, 0.8);
 
                 /* ==================== TRANSPARENCY GRID ==================== */
-                --grid-color: #aaa;
-                --grid-size: 20px;
+                --grid-color: #ff99b21f;
+                --grid-size: 16px;
 
                 /* ==================== SPACING & SIZING ==================== */
                 --gap: 16px;
@@ -179,22 +198,36 @@
             .code-editor {
                 height: 400px;
                 background-color: var(--bg-panel);
-                border: var(--border-thickness) solid var(--border-input);
+                border: var(--border-thickness) solid var(--border-input); /* Existing border */
                 border-radius: var(--border-radius);
                 overflow: hidden;
+                /* --- MERGE START: Add transition for smooth focus on code editor container --- */
+                transition: border-color 0.2s ease-in-out;
+                /* --- MERGE END --- */
             }
+
+            /* --- MERGE START: Add focus highlight for the code editor container --- */
+            .code-editor:focus-within {
+                border-color: var(
+                    --btn-border-active
+                ); /* Highlight border when textarea inside is focused */
+            }
+            /* --- MERGE END --- */
 
             .code-editor textarea {
                 width: 100%;
                 height: 100%;
                 resize: none;
-                border: none;
+                border: none; /* Textarea itself has no border */
                 padding: 8px;
                 background-color: transparent;
                 line-height: 1.5;
                 tab-size: 2;
                 font-family: monospace;
                 color: var(--text);
+                /* --- MERGE START: Remove default outline from textarea --- */
+                outline: none; /* Remove focus outline from the textarea itself */
+                /* --- MERGE END --- */
             }
 
             /* ==================== BUTTONS ==================== */
@@ -541,7 +574,11 @@
                         </div>
                         <div class="var-row">
                             <div class="checkbox-wrapper">
-                                <input type="checkbox" id="transparentCanvas" />
+                                <input
+                                    type="checkbox"
+                                    id="transparentCanvas"
+                                    checked
+                                />
                                 <label for="transparentCanvas"
                                     >Transparent Canvas</label
                                 >
@@ -847,7 +884,7 @@
             let canvasState = { x: 0, y: 0, width: 0, height: 0 };
             let zoomLevel = 1,
                 bgColor = "#000000";
-            let useTransparent = false,
+            let useTransparent = true,
                 useExportAlpha = false;
 
             // History State
@@ -1235,23 +1272,57 @@
              */
             function updateCanvasDisplay() {
                 if (useTransparent) {
-                    // Show checkerboard pattern for transparency
+                    // --- MERGE START: Read CSS variables for checkerboard values ---
+                    // Get computed styles from the root element where variables are defined
+                    const rootStyle = getComputedStyle(
+                        document.documentElement,
+                    );
+                    // Read the --grid-color variable, provide a fallback if not found
+                    const gridColor =
+                        rootStyle.getPropertyValue("--grid-color").trim() ||
+                        "#cccccc";
+                    // Read the --grid-size variable, provide a fallback if not found
+                    const gridSize =
+                        rootStyle.getPropertyValue("--grid-size").trim() ||
+                        "20px";
+                    // Calculate half the grid size for positioning
+                    const gridSizeValue = parseInt(gridSize); // Get numeric value (e.g., 20)
+                    const halfGridSizeValue = gridSizeValue / 2; // e.g., 10
+
+                    // Set background color to transparent
                     canvasContainer.style.backgroundColor = "transparent";
-                    canvasContainer.style.backgroundImage =
-                        "linear-gradient(45deg, #aaa 25%, transparent 25%), " +
-                        "linear-gradient(-45deg, #aaa 25%, transparent 25%), " +
-                        "linear-gradient(45deg, transparent 75%, #aaa 75%), " +
-                        "linear-gradient(-45deg, transparent 75%, #aaa 75%)";
-                    canvasContainer.style.backgroundSize = "20px 20px";
-                    canvasContainer.style.backgroundPosition =
-                        "0 0, 0 10px, 10px -10px, -10px 0px";
+
+                    // Construct the background-image string using the gridColor variable
+                    canvasContainer.style.backgroundImage = `
+                        linear-gradient(45deg, ${gridColor} 25%, transparent 25%),
+                        linear-gradient(-45deg, ${gridColor} 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, ${gridColor} 75%),
+                        linear-gradient(-45deg, transparent 75%, ${gridColor} 75%)
+                    `;
+
+                    // Set the background-size using the gridSize variable
+                    canvasContainer.style.backgroundSize = `${gridSize} ${gridSize}`;
+
+                    // Set the background-position using the calculated half size
+                    // Note: We construct the pixel values (e.g., "10px")
+                    canvasContainer.style.backgroundPosition = `
+                        0 0,
+                        0 ${halfGridSizeValue}px,
+                        ${halfGridSizeValue}px ${-halfGridSizeValue}px,
+                        ${-halfGridSizeValue}px 0px
+                    `;
                 } else {
                     // Solid background
                     canvasContainer.style.backgroundColor = bgColor;
                     canvasContainer.style.backgroundImage = "none";
+                    //Reset size/position when not transparent ---
+                    // Explicitly clear size and position that might have been set
+                    // by the transparent state to avoid potential conflicts.
+                    canvasContainer.style.backgroundSize = "";
+                    canvasContainer.style.backgroundPosition = "";
                 }
 
-                // Apply zoom
+                // Apply zoom (This part remains the same)
                 canvas.style.transformOrigin = "center center";
                 canvas.style.transform = `scale(${zoomLevel})`;
             }
