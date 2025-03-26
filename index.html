@@ -96,6 +96,26 @@
             h1 {
                 position: center;
                 text-align: center;
+                margin: var(--margin) 0 var(--margin) 0;
+
+            }
+
+            .github-link {
+                text-align: center; /* Match h1 alignment */
+                font-size: 0.8em; /* Smaller font size */
+                margin-top: var(--margin-small); /* Space below h1 */
+                margin-bottom: var(--margin); /* Space above next element */
+                line-height: 1; /* Adjust line height if needed */
+            }
+
+            .github-link a {
+                color: #FF4775; /* Changed from var(--text) */
+                text-decoration: none; /* Optional: remove underline */
+            }
+
+            .github-link a:hover {
+                text-decoration: underline; /* Optional: add underline on hover */
+                color: var(--btn-border-active); /* Optional: highlight color on hover */
             }
 
             h2,
@@ -615,6 +635,14 @@
         <!-- ==================== MAIN LAYOUT ==================== -->
         <div class="container">
             <h1>GLSL Image Shader</h1>
+            <p class="github-link">
+                <a
+                    href="https://github.com/PopCat19/img-glsl-webui"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >https://github.com/PopCat19/img-glsl-webui</a
+                >
+            </p>
             <div class="row">
                 <!-- ==================== INPUT COLUMN ==================== -->
                 <div class="col">
