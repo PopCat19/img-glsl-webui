@@ -4,6 +4,17 @@ GLSL on images via WebGL (LLM generated)
 ### What's this?
 You combine an image and glsl shader within the webui, you get to export them as png/jpg or webm afterwards.
 
+It features:
+- 5 Shader save slots
+- experimental webm export
+- png/jpg export
+- middle click drag input adjustment (swipe input adjustment on mobile)
+- responsive design
+- single html file
+- console logging
+- image drag/drop, paste, url support
+- bugs
+
 ### Why?
 I wanted to use my shaders to export images larger than my monitor resolution (mainly used hyprshade with screenshots). I spent a tiny, tiny bit of hours with claude 3.7 low (shout out t3 chat for cheap service) and somehow got this. It works well enough for me (so far).
 
