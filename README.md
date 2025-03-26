@@ -5,7 +5,7 @@ GLSL on images via WebGL (LLM generated)
 You combine an image and glsl shader within the webui, you get to export them as png/jpg or webm afterwards.
 
 It features:
-- 5 Shader save slots
+- 5 Shader save slots (left click to save/load, right click to clear or tap to save/load, hold to clear on mobile)
 - experimental webm export
 - png/jpg export
 - middle click drag input adjustment (swipe input adjustment on mobile)
