@@ -205,18 +205,14 @@
                 border: var(--border-thickness) solid var(--border-input); /* Existing border */
                 border-radius: var(--border-radius);
                 overflow: hidden;
-                /* --- MERGE START: Add transition for smooth focus on code editor container --- */
                 transition: border-color 0.2s ease-in-out;
-                /* --- MERGE END --- */
             }
 
-            /* --- MERGE START: Add focus highlight for the code editor container --- */
             .code-editor:focus-within {
                 border-color: var(
                     --btn-border-active
                 ); /* Highlight border when textarea inside is focused */
             }
-            /* --- MERGE END --- */
 
             .code-editor textarea {
                 width: 100%;
@@ -229,9 +225,7 @@
                 tab-size: 2;
                 font-family: monospace;
                 color: var(--text);
-                /* --- MERGE START: Remove default outline from textarea --- */
                 outline: none; /* Remove focus outline from the textarea itself */
-                /* --- MERGE END --- */
             }
 
             /* ==================== BUTTONS ==================== */
@@ -346,7 +340,7 @@
             .save-slots {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 5px;
+                gap: 8px; /* Slightly smaller gap might look better */
                 margin: var(--margin) 0;
             }
 
@@ -369,11 +363,23 @@
                 transform: scale(0.98);
             }
 
+            /* Active state only applies to save slots */
             .save-slot.active {
                 background-color: var(--btn-active);
                 color: var(--background);
             }
 
+            @media (max-width: 768px) {
+                .save-slots {
+                    gap: 5px; /* Even smaller gap on mobile */
+                }
+
+                .save-slot {
+                    min-width: 60px; /* Adjust min-width for all */
+                    padding: 6px; /* Adjust padding for all */
+                    font-size: 0.9em; /* Adjust font size for all */
+                }
+            }
             /* ==================== CHECKBOXES ==================== */
             .checkbox-wrapper {
                 display: flex;
@@ -664,6 +670,13 @@
                         </button>
                         <button id="loadShader">Load Shader</button>
                         <button id="saveCurrentSlot">Save Current Slot</button>
+                        <button
+                            id="unloadSlot"
+                            type="button"
+                            style="display: none"
+                        >
+                            Unload Active Slot
+                        </button>
                         <button id="pauseTime">Pause Time</button>
                         <div class="history-controls">
                             <button id="undoButton" title="Undo">↩</button>
@@ -726,27 +739,19 @@
                             </div>
                         </div>
                         <div class="var-row">
-                            <span class="var-name">Zoom:</span>
-                            <input
-                                type="range"
-                                id="zoomLevel"
-                                min="0.1"
-                                max="5"
-                                step="0.1"
-                                value="1"
-                                class="var-input"
-                            />
-                            <input
-                                type="number"
-                                id="zoomInput"
-                                value="1"
-                                min="0.1"
-                                max="5"
-                                step="0.1"
-                                style="width: 60px"
-                            />
-                            <span id="zoomValue">1x</span>
-                            <button id="resetZoom">Reset</button>
+                            <div class="var-row">
+                                <span class="var-name">Zoom:</span>
+                                <input
+                                    type="number"
+                                    id="zoomInput"
+                                    value="1"
+                                    min="0.1"
+                                    max="5"
+                                    step="0.1"
+                                    style="width: 60px"
+                                />
+                                <button id="resetZoom">Reset</button>
+                            </div>
                         </div>
                     </div>
 
@@ -923,7 +928,7 @@
                                 id="exportStartTime"
                                 min="0"
                                 value="0"
-                                step="0.01"
+                                step="1"
                                 class="var-input"
                             />
                         </div>
@@ -987,9 +992,7 @@
             const codeTextarea = $("shaderCode");
 
             // UI Elements
-            const zoomSlider = $("zoomLevel");
             const zoomInput = $("zoomInput");
-            const zoomValue = $("zoomValue");
             const bgColorInput = $("canvasBackground");
             const bgColorPreview = $("bgColorPreview");
             const transCanvas = $("transparentCanvas");
@@ -1407,7 +1410,6 @@
              */
             function updateCanvasDisplay() {
                 if (useTransparent) {
-                    // --- MERGE START: Read CSS variables for checkerboard values ---
                     // Get computed styles from the root element where variables are defined
                     const rootStyle = getComputedStyle(
                         document.documentElement,
@@ -2046,23 +2048,38 @@
              */
             function initSaveSlots() {
                 const saveSlots = document.querySelectorAll(".save-slot");
-                let activeSlot = null;
+                const unloadSlotBtn = $("unloadSlot");
+                let activeSlot = null; // Stores the number (string) of the active slot
+
+                function updateUnloadButtonVisibility() {
+                    if (activeSlot) {
+                        unloadSlotBtn.style.display = "inline-block";
+                    } else {
+                        unloadSlotBtn.style.display = "none";
+                    }
+                }
 
                 saveSlots.forEach((slot) => {
                     const slotNum = slot.dataset.slot;
 
-                    // Set initial state
+                    if (localStorage.getItem(`glsl-shader-slot-${slotNum}`)) {
+                        // Optional indicator
+                    }
+
                     slot.textContent = `Slot ${slotNum}`;
-                    slot.dataset.state = "default"; // Possible states: default, confirm_save, confirm_load, confirm_clear, finish
+                    slot.dataset.state = "default";
                     let timer = null;
 
-                    /**
-                     * Resets slot to default state
-                     */
                     function resetSlot() {
                         slot.textContent = `Slot ${slotNum}`;
+                        if (activeSlot === slotNum) {
+                            slot.classList.add("active");
+                        } else {
+                            slot.classList.remove("active");
+                        }
                         slot.dataset.state = "default";
                         timer = null;
+                        updateUnloadButtonVisibility();
                     }
 
                     // Left-click handler
@@ -2080,7 +2097,6 @@
 
                         // Default state behavior
                         if (slot.dataset.state === "default") {
-                            // Check if slot has saved content
                             if (
                                 localStorage.getItem(
                                     `glsl-shader-slot-${slotNum}`,
@@ -2099,13 +2115,29 @@
                         // Confirm save
                         if (slot.dataset.state === "confirm_save") {
                             if (timer) clearTimeout(timer);
+                            const shaderCodeToSave = codeTextarea.value;
                             localStorage.setItem(
                                 `glsl-shader-slot-${slotNum}`,
-                                codeTextarea.value,
+                                shaderCodeToSave,
                             );
+
+                            saveSlots.forEach((s) =>
+                                s.classList.remove("active"),
+                            );
+                            slot.classList.add("active");
+                            activeSlot = slotNum;
+                            updateUnloadButtonVisibility();
+
+                            compileShader();
+                            render();
+
                             slot.textContent = "saved!";
                             slot.dataset.state = "finish";
                             timer = setTimeout(resetSlot, 1000);
+
+                            log(
+                                `Shader saved to and loaded from Slot ${slotNum}`,
+                            );
                             return;
                         }
 
@@ -2117,25 +2149,39 @@
                             );
                             if (savedContent) {
                                 codeTextarea.value = savedContent;
+
+                                compileShader();
+                                render();
+
+                                saveSlots.forEach((s) =>
+                                    s.classList.remove("active"),
+                                );
+                                slot.classList.add("active");
+                                activeSlot = slotNum;
+                                updateUnloadButtonVisibility();
+
+                                slot.textContent = "loaded!";
+                                slot.dataset.state = "finish";
+                                timer = setTimeout(resetSlot, 1000);
+
+                                log(`Shader loaded from Slot ${slotNum}`);
+                            } else {
+                                slot.textContent = "load failed";
+                                slot.dataset.state = "finish";
+                                timer = setTimeout(resetSlot, 1000);
+                                log(
+                                    `Failed to load Slot ${slotNum} - not found`,
+                                    "error",
+                                );
                             }
-                            slot.textContent = "loaded!";
-                            // Update active slot
-                            saveSlots.forEach((s) =>
-                                s.classList.remove("active"),
-                            );
-                            slot.classList.add("active");
-                            activeSlot = slotNum;
-                            slot.dataset.state = "finish";
-                            timer = setTimeout(resetSlot, 1000);
                             return;
                         }
-                    });
+                    }); // End left-click handler
 
                     // Right-click handler
                     slot.addEventListener("contextmenu", (e) => {
                         e.preventDefault();
 
-                        // Abort any pending save/load confirmation
                         if (
                             slot.dataset.state === "confirm_save" ||
                             slot.dataset.state === "confirm_load"
@@ -2147,33 +2193,85 @@
                             return;
                         }
 
-                        // Default state - start clear confirmation
                         if (slot.dataset.state === "default") {
-                            slot.textContent = "clear?";
-                            slot.dataset.state = "confirm_clear";
-                            timer = setTimeout(resetSlot, 3000);
+                            if (
+                                localStorage.getItem(
+                                    `glsl-shader-slot-${slotNum}`,
+                                )
+                            ) {
+                                slot.textContent = "clear?";
+                                slot.dataset.state = "confirm_clear";
+                                timer = setTimeout(resetSlot, 3000);
+                            } else {
+                                slot.textContent = "empty";
+                                slot.dataset.state = "finish";
+                                timer = setTimeout(resetSlot, 1000);
+                            }
                             return;
                         }
 
                         // Confirm clear
                         if (slot.dataset.state === "confirm_clear") {
                             if (timer) clearTimeout(timer);
+                            const wasActive = activeSlot === slotNum; // Check if it was active *before* clearing
                             localStorage.removeItem(
                                 `glsl-shader-slot-${slotNum}`,
                             );
                             slot.textContent = "cleared!";
                             slot.dataset.state = "finish";
-                            // Update active slot if needed
-                            slot.classList.remove("active");
-                            if (activeSlot === slotNum) {
+
+                            if (wasActive) {
+                                // Use the stored boolean
+                                slot.classList.remove("active");
+                                const previouslyActiveSlot = activeSlot; // Store for logging
                                 activeSlot = null;
+                                updateUnloadButtonVisibility();
+                                log(
+                                    `Cleared active Slot ${previouslyActiveSlot}`,
+                                );
+                                // Optionally load default shader when clearing the active slot?
+                                // compileDefaultShader();
+                                // render();
+                            } else {
+                                log(`Cleared Slot ${slotNum}`);
                             }
+
                             timer = setTimeout(resetSlot, 1000);
                             return;
                         }
-                    });
+                    }); // End right-click handler
+                }); // End forEach slot
+
+                unloadSlotBtn.addEventListener("click", () => {
+                    if (activeSlot) {
+                        const previouslyActiveSlot = activeSlot; // Store for logging
+                        const activeSlotElement = document.querySelector(
+                            `.save-slot[data-slot="${activeSlot}"]`,
+                        );
+                        if (activeSlotElement) {
+                            activeSlotElement.classList.remove("active");
+                        }
+                        activeSlot = null;
+                        updateUnloadButtonVisibility(); // Hide the button
+
+                        // Load the default shader
+                        compileDefaultShader();
+                        render();
+
+                        log(
+                            `Unloaded active Slot ${previouslyActiveSlot}. Default shader active.`,
+                        );
+                    } else {
+                        // Should not happen if button visibility is correct, but good practice
+                        log("No slot is currently active to unload.", "info");
+                        updateUnloadButtonVisibility(); // Ensure it's hidden
+                    }
                 });
-            }
+                // Initial check for unload button visibility
+                // If implementing auto-load on startup, call updateUnloadButtonVisibility() after that logic.
+                // Otherwise, it starts hidden correctly by default HTML.
+                updateUnloadButtonVisibility(); // Call if needed after potential auto-load
+            } // End initSaveSlots
 
             // ==================== UI UPDATERS ====================
 
@@ -2200,36 +2298,6 @@
                 $("canvasY").value = canvasState.y;
                 $("canvasWidth").value = canvasState.width;
                 $("canvasHeight").value = canvasState.height;
-            }
-
-            /**
-             * Updates zoom slider appearance
-             */
-            function updateSliderAppearance() {
-                zoomLevel = parseFloat(zoomSlider.value);
-                zoomInput.value = zoomLevel;
-                zoomValue.textContent = `${zoomLevel.toFixed(1)}x`;
-
-                // Calculate gradient for slider
-                const min = parseFloat(zoomSlider.min);
-                const max = parseFloat(zoomSlider.max);
-                const value = zoomLevel;
-                const sliderWidth = zoomSlider.clientWidth;
-                const thumbSize = 20;
-                const centerPosition =
-                    ((value - min) / (max - min)) * (sliderWidth - thumbSize) +
-                    thumbSize / 2;
-                const centerPercentage = (centerPosition / sliderWidth) * 100;
-
-                zoomSlider.style.background = `linear-gradient(
-                    to right,
-                    var(--btn-active) 0%,
-                    var(--btn-active) ${centerPercentage}%,
-                    var(--slider-color) ${centerPercentage}%,
-                    var(--slider-color) 100%
-                )`;
-
-                updateCanvasDisplay();
             }
 
             // Middle-click/Touch drag for number inputs
@@ -2439,6 +2507,93 @@
             }
             */
 
+            // Add Shift + Arrow Key modifier for number inputs
+
+            /**
+             * Handles keydown events on number inputs for step modification.
+             * @param {KeyboardEvent} event
+             */
+            function handleNumberInputKeyDown(event) {
+                const targetInput = event.target;
+
+                // Check if it's a number input and ArrowUp or ArrowDown
+                if (
+                    targetInput.type !== "number" ||
+                    (event.key !== "ArrowUp" && event.key !== "ArrowDown") ||
+                    targetInput.disabled ||
+                    targetInput.readOnly
+                ) {
+                    return; // Ignore if not relevant
+                }
+
+                // Determine the step value
+                let step = 1; // Default step
+                const stepAttr = targetInput.step;
+                if (
+                    stepAttr &&
+                    stepAttr !== "any" &&
+                    !isNaN(parseFloat(stepAttr))
+                ) {
+                    step = parseFloat(stepAttr);
+                } else {
+                    // Basic heuristic for default step if not specified
+                    const minVal = parseFloat(targetInput.min);
+                    if (!isNaN(minVal) && minVal % 1 !== 0) {
+                        step = 0.1; // Assume decimal if min is decimal
+                    }
+                }
+                if (isNaN(step) || step <= 0) step = 1; // Ensure valid step
+
+                // Apply modifier if Shift key is pressed
+                const multiplier = event.shiftKey ? 2 : 1;
+                const effectiveStep = step * multiplier;
+
+                // Get current value
+                let currentValue = parseFloat(targetInput.value);
+                if (isNaN(currentValue)) {
+                    // Try to use min, max, or default value if current is invalid
+                    currentValue =
+                        parseFloat(targetInput.defaultValue) ||
+                        parseFloat(targetInput.min) ||
+                        0;
+                    if (isNaN(currentValue)) currentValue = 0; // Absolute fallback
+                }
+
+                // Calculate new value
+                let newValue =
+                    currentValue +
+                    (event.key === "ArrowUp" ? effectiveStep : -effectiveStep);
+
+                // Clamp value within min/max bounds
+                const minVal = parseFloat(targetInput.min);
+                const maxVal = parseFloat(targetInput.max);
+                if (!isNaN(minVal)) {
+                    newValue = Math.max(minVal, newValue);
+                }
+                if (!isNaN(maxVal)) {
+                    newValue = Math.min(maxVal, newValue);
+                }
+
+                // Round to appropriate decimal places based on original step
+                const decimalPlaces = getDecimalPlaces(stepAttr); // Use original step for rounding precision
+                newValue = parseFloat(newValue.toFixed(decimalPlaces));
+
+                // Prevent default arrow key behavior
+                event.preventDefault();
+
+                // Update the input value only if it changed
+                if (targetInput.value !== String(newValue)) {
+                    targetInput.value = newValue;
+                    // Dispatch change event so other listeners react
+                    targetInput.dispatchEvent(new Event("change"));
+                    // Dispatch input event for live updates if needed
+                    targetInput.dispatchEvent(new Event("input"));
+                }
+            }
+
+            // Attach listener using event delegation on the body
+            document.body.addEventListener("keydown", handleNumberInputKeyDown);
+
             // ==================== EVENT LISTENERS ====================
 
             // Initialize WebGL
@@ -2451,9 +2606,6 @@
 
             // Initialize save slots
             initSaveSlots();
-
-            // Initialize slider appearance
-            updateSliderAppearance();
 
             // External image URL handling
             externalImageUrl.addEventListener("input", () => {
@@ -2853,49 +3005,46 @@
             });
 
             // Zoom controls
-            zoomSlider.addEventListener("input", updateSliderAppearance);
             zoomInput.addEventListener("input", () => {
-                zoomLevel = parseFloat(zoomInput.value);
-                zoomSlider.value = zoomLevel;
-                zoomValue.textContent = `${zoomLevel.toFixed(1)}x`;
-                updateCanvasDisplay();
+                const newZoom = parseFloat(zoomInput.value);
+                // Ensure value is within bounds (browser might handle this, but good practice)
+                const minZoom = parseFloat(zoomInput.min) || 0.1;
+                const maxZoom = parseFloat(zoomInput.max) || 5;
+                if (
+                    !isNaN(newZoom) &&
+                    newZoom >= minZoom &&
+                    newZoom <= maxZoom
+                ) {
+                    zoomLevel = newZoom;
+                    updateCanvasDisplay(); // Keep this to apply zoom
+                } else if (isNaN(newZoom)) {
+                    // Handle invalid input if necessary, maybe reset or ignore
+                } else {
+                    // Optionally clamp the value if user types outside bounds
+                    zoomLevel = Math.max(minZoom, Math.min(maxZoom, newZoom));
+                    zoomInput.value = zoomLevel; // Update input visually
+                    updateCanvasDisplay();
+                }
             });
 
+            // Reset zoom
             $("resetZoom").addEventListener("click", () => {
                 zoomLevel = 1;
-                zoomSlider.value = 1;
                 zoomInput.value = 1;
-                zoomValue.textContent = "1x";
-                updateSliderAppearance();
+                updateCanvasDisplay(); // Keep this
             });
 
             // Reset all parameters
             $("resetAllParams").addEventListener("click", () => {
-                rotation = 0;
-                mirrorX = mirrorY = false;
-                if (image) {
-                    canvasState = {
-                        x: 0,
-                        y: 0,
-                        width: image.width,
-                        height: image.height,
-                    };
-                }
+                // ... other resets ...
 
-                bgColor = "#000000";
-                bgColorInput.value = bgColor;
-                bgColorPreview.style.backgroundColor = bgColor;
+                // Keep zoom reset part
                 zoomLevel = 1;
-                zoomSlider.value = 1;
                 zoomInput.value = 1;
-                zoomValue.textContent = "1x";
-
-                updateRotationUI();
-                updateCanvasUI();
-                updateTransform();
-                updateCanvasDisplay();
+                // ... other updates ...
+                updateCanvasDisplay(); // Keep this
                 saveToHistory();
-                log("All parameters reset to defaults");
+                log("Most parameters reset to defaults");
             });
 
             // History controls
