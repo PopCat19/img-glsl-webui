@@ -244,6 +244,10 @@
                 background-color: var(--btn-hover);
             }
 
+            button.highlight-border {
+                border: var(--border-thickness) solid var(--btn-border-active);
+            }
+
             button:active {
                 transform: scale(0.98);
             }
@@ -366,7 +370,7 @@
             /* Active state only applies to save slots */
             .save-slot.active {
                 background-color: var(--btn-active);
-                color: var(--background);
+                color: var(--btn-active-text-color); /* Was var(--background) */
             }
 
             @media (max-width: 768px) {
@@ -1250,6 +1254,9 @@
                 program = newProgram;
                 gl.useProgram(program);
                 log("Default shader compiled successfully");
+
+                // Default shader wasn't explicitly compiled via Apply button
+                lastCompiledCode = null;
             }
 
             /**
@@ -1272,20 +1279,26 @@
                     gl.FRAGMENT_SHADER,
                     fragmentSource,
                 );
-                if (!fragmentShader) return;
+                if (!fragmentShader) {
+                    return;
+                }
 
                 const newProgram = createProgram(
                     gl,
                     vertexShader,
                     fragmentShader,
                 );
-                if (!newProgram) return;
+                if (!newProgram) {
+                    return;
+                }
 
                 if (program) gl.deleteProgram(program);
                 program = newProgram;
                 gl.useProgram(program);
 
                 log("Shader compiled successfully");
+
+                // Always update border state after any compile attempt
 
                 // Reset time tracking
                 startTime = Date.now();
@@ -2165,6 +2178,8 @@
                                 timer = setTimeout(resetSlot, 1000);
 
                                 log(`Shader loaded from Slot ${slotNum}`);
+
+                                updateLoadShaderBorder(); // Editor is no longer empty
                             } else {
                                 slot.textContent = "load failed";
                                 slot.dataset.state = "finish";
@@ -2242,35 +2257,55 @@
                     }); // End right-click handler
                 }); // End forEach slot
 
+                // Add event listener for the unload button
                 unloadSlotBtn.addEventListener("click", () => {
                     if (activeSlot) {
                         const previouslyActiveSlot = activeSlot; // Store for logging
                         const activeSlotElement = document.querySelector(
                             `.save-slot[data-slot="${activeSlot}"]`,
                         );
+
+                        // Check if editor content matches unloaded slot
+                        const currentEditorCode = codeTextarea.value; // Get current code before unload
+                        const savedSlotCode = localStorage.getItem(
+                            `glsl-shader-slot-${previouslyActiveSlot}`,
+                        );
+                        // Check if saved code exists and matches the editor
+                        const shouldWipeEditor =
+                            savedSlotCode !== null &&
+                            currentEditorCode === savedSlotCode;
+                        // Deactivate the visual slot
                         if (activeSlotElement) {
                             activeSlotElement.classList.remove("active");
                         }
-                        activeSlot = null;
-                        updateUnloadButtonVisibility(); // Hide the button
+                        activeSlot = null; // Clear the active slot tracker
+                        updateUnloadButtonVisibility(); // Hide the unload button
 
-                        // Load the default shader
+                        // Load the default shader (this will update apply border via its own logic)
                         compileDefaultShader();
                         render();
 
-                        log(
-                            `Unloaded active Slot ${previouslyActiveSlot}. Default shader active.`,
-                        );
+                        // Wipe editor if content matched
+                        if (shouldWipeEditor) {
+                            codeTextarea.value = ""; // Clear the editor
+                            log(
+                                `Unloaded active Slot ${previouslyActiveSlot}, editor cleared. Default shader active.`,
+                            );
+                            // Trigger border updates since editor changed
+                            updateLoadShaderBorder(); // Editor is now empty
+                        } else {
+                            log(
+                                `Unloaded active Slot ${previouslyActiveSlot}. Editor content preserved. Default shader active.`,
+                            );
+                        }
                     } else {
                         // Should not happen if button visibility is correct, but good practice
                         log("No slot is currently active to unload.", "info");
                         updateUnloadButtonVisibility(); // Ensure it's hidden
                     }
                 });
-                // Initial check for unload button visibility
-                // If implementing auto-load on startup, call updateUnloadButtonVisibility() after that logic.
-                // Otherwise, it starts hidden correctly by default HTML.
-                updateUnloadButtonVisibility(); // Call if needed after potential auto-load
+                // Ensure initial visibility check is present
+                updateUnloadButtonVisibility(); // Check visibility on load
             } // End initSaveSlots
 
             // ==================== UI UPDATERS ====================
@@ -2591,6 +2626,53 @@
                 }
             }
 
+            // Replace handleDragMove with version including Shift key logic
+            function handleDragMove(event) {
+                if (!isDraggingInput || !dragTargetInput) return;
+
+                let currentX = 0;
+                // Check shiftKey state within the move handler
+                const isShiftPressed = event.shiftKey; // Check if Shift is held *during* move
+
+                if (event.type === "touchmove") {
+                    if (event.touches.length === 0) return;
+                    currentX = event.touches[0].clientX;
+                    event.preventDefault(); // Prevent scrolling during swipe
+                } else {
+                    currentX = event.clientX;
+                }
+
+                const deltaX = currentX - dragStartX;
+                const stepsMoved = Math.round(deltaX / dragPixelsPerStep);
+
+                // Apply precision modifier if Shift is pressed
+                const precisionMultiplier = isShiftPressed ? 0.5 : 1;
+                const valueChange = stepsMoved * dragStep * precisionMultiplier;
+                let newValue = dragStartValue + valueChange;
+
+                // Clamp value within min/max bounds (remains the same)
+                const minVal = parseFloat(dragTargetInput.min);
+                const maxVal = parseFloat(dragTargetInput.max);
+                if (!isNaN(minVal)) {
+                    newValue = Math.max(minVal, newValue);
+                }
+                if (!isNaN(maxVal)) {
+                    newValue = Math.min(maxVal, newValue);
+                }
+
+                // Round to appropriate decimal places based on step (remains the same)
+                // Use original dragStep for rounding precision, not the modified one
+                const decimalPlaces = getDecimalPlaces(dragTargetInput.step);
+                newValue = parseFloat(newValue.toFixed(decimalPlaces));
+
+                // Update the input value only if it changed (remains the same)
+                if (dragTargetInput.value !== String(newValue)) {
+                    dragTargetInput.value = newValue;
+                    dragTargetInput.dispatchEvent(new Event("change"));
+                    dragTargetInput.dispatchEvent(new Event("input"));
+                }
+            }
+
             // Attach listener using event delegation on the body
             document.body.addEventListener("keydown", handleNumberInputKeyDown);
 
@@ -2762,6 +2844,7 @@
                         codeTextarea.value = evt.target.result;
                         log(`Shader loaded: ${file.name}`);
                         saveToHistory();
+                        updateLoadShaderBorder(); // Editor is no longer empty
                     };
                     reader.readAsText(file);
                 }
@@ -2842,7 +2925,17 @@
 
             // Shader controls
             $("updateShader").addEventListener("click", () => {
+                const codeToCompile = codeTextarea.value.trim();
                 compileShader();
+                // Check if the program exists (compileShader didn't return early on error)
+                // and if the source matches what we intended to compile
+                if (program && codeToCompile.length > 0) {
+                    // A crude check: does the current program's source match?
+                    // This is imperfect but better than nothing. A more robust check
+                    // would involve getting shader source from WebGL, which is complex.
+                    // For now, assume success if compileShader didn't error out.
+                    lastCompiledCode = codeToCompile;
+                }
                 render();
                 saveToHistory();
                 log("Shader updated!");
@@ -3102,6 +3195,44 @@
             updateRotationUI();
             updateHistoryBtns();
             updateImageButtons();
+
+            // Logic for Load Shader button border
+
+            // Get references to the elements
+            const codeTextareaForBorder = $("shaderCode"); // Reusing existing reference is fine
+            const loadShaderBtn = $("loadShader");
+            const highlightClassName = "highlight-border"; // Define class name
+
+            /**
+             * Checks if the shader code textarea is empty and updates the
+             * 'Load Shader' button's border class accordingly.
+             */
+            function updateLoadShaderBorder() {
+                if (!codeTextareaForBorder || !loadShaderBtn) return; // Safety check
+
+                const code = codeTextareaForBorder.value.trim(); // Get trimmed content
+
+                if (code.length === 0) {
+                    // Textarea is empty, add the border class
+                    loadShaderBtn.classList.add(highlightClassName);
+                } else {
+                    // Textarea has content, remove the border class
+                    loadShaderBtn.classList.remove(highlightClassName);
+                }
+            }
+
+            // Add event listener to the textarea to check on input
+            if (codeTextareaForBorder) {
+                codeTextareaForBorder.addEventListener("input", () => {
+                    // Use arrow function
+                    updateLoadShaderBorder();
+                });
+            }
+
+            // Call the update function once on initial load ---
+            // Place this call at the very end of your main script block,
+            // after all other initializations and event listeners are set up.
+            updateLoadShaderBorder();
         </script>
     </body>
 </html>
