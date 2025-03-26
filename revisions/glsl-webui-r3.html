@@ -29,6 +29,7 @@
                 --slider-color: var(--btn-hover);
                 --btn-border-active: #ff99b2;
                 --label-color: var(--text);
+                --canvas-max-height: 70vh;
 
                 /* ==================== FORM CONTROLS ==================== */
                 textarea,
@@ -58,7 +59,10 @@
 
                 /* ==================== FULLSCREEN ==================== */
                 --fullscreen-bg: rgba(0, 0, 0, 0.9);
-                --exit-btn-bg: rgba(0, 0, 0, 0.5);
+                /* Using theme vars as base, but could be different if needed */
+                --exit-btn-bg: var(--btn);
+                --exit-btn-hover-bg: var(--btn-hover);
+                --exit-btn-text: var(--text);
                 --exit-btn-hover-bg: rgba(30, 30, 30, 0.8);
 
                 /* ==================== TRANSPARENCY GRID ==================== */
@@ -439,18 +443,33 @@
 
             .exit-fullscreen {
                 position: absolute;
-                top: 20px;
-                right: 20px;
-                background: var(--exit-btn-bg);
-                color: white;
+                top: var(--padding); /* Use theme padding for top spacing */
+                right: var(--padding); /* Use theme padding for right spacing */
+                background: var(--btn); /* Use standard button background */
+                color: var(--text); /* Use standard button text color */
                 border: none;
-                border-radius: var(--border-radius);
-                padding: 10px 15px;
+                border-radius: var(
+                    --border-radius
+                ); /* Keep consistent radius */
+                padding: 8px 16px; /* Use standard button padding */
                 cursor: pointer;
+                transition: all 0.2s ease; /* Add standard transition */
             }
 
             .exit-fullscreen:hover {
-                background: var(--exit-btn-hover-bg);
+                background: var(--btn-hover); /* Use standard button hover */
+            }
+
+            .exit-fullscreen:active {
+                transform: scale(0.98); /* Standard active effect */
+                background: var(--btn-active); /* Use standard button active */
+            }
+
+            /* Remove the inline style from the HTML for #fullscreenPauseTime */
+            #fullscreenPauseTime {
+                /* Adjust right position. This is an estimate, may need tweaking. */
+                /* It assumes the first button is roughly 180px wide + theme gap */
+                right: calc(var(--padding) + 180px + var(--gap));
             }
 
             /* ==================== DRAG & DROP ==================== */
@@ -458,6 +477,128 @@
                 border: 2px dashed var(--btn-active) !important;
                 background-color: var(--btn-hover) !important;
             }
+
+            @media (max-width: 768px) {
+                /* Reduce overall padding/margins for smaller screens */
+                :root {
+                    --padding: 12px;
+                    --padding-small: 6px;
+                    --margin: 12px;
+                    --margin-small: 6px;
+                    --gap: 12px;
+                }
+
+                body {
+                    margin: var(
+                        --padding-small
+                    ); /* Reduce body margin */
+                    font-size: 14px; /* Slightly smaller base font */
+                }
+
+                h1 {
+                    font-size: 1.5em; /* Smaller main heading */
+                }
+
+                h2,
+                h3 {
+                    font-size: 1.2em; /* Smaller section headings */
+                }
+
+                /* Stack the main input and output columns */
+                .row {
+                    flex-direction: column;
+                }
+
+                /* Allow columns to take full width when stacked */
+                .col {
+                    min-width: 100%; /* Override min-width */
+                    width: 100%;
+                }
+
+                /* Adjust variable rows for better wrapping */
+                .var-row {
+                    /* Allow items to wrap more freely */
+                }
+
+                .var-name {
+                    width: 100%; /* Let label take full width */
+                    margin-bottom: var(
+                        --margin-small
+                    ); /* Add space below label when it wraps */
+                    text-align: left; /* Ensure alignment */
+                    flex-shrink: 1; /* Allow shrinking if needed */
+                }
+
+                .var-input {
+                    min-width: 150px; /* Ensure input has some minimum space */
+                    flex-grow: 1; /* Allow input to grow */
+                }
+
+                /* Specific adjustments for multi-input rows */
+                .transform-controls .var-row input[type="number"],
+                .external-image-row .var-input {
+                    /* Allow multiple inputs per row to share space better */
+                    flex-basis: 45%; /* Roughly two inputs per line before wrapping */
+                    flex-grow: 1;
+                }
+
+                /* Reduce height of code editor and console */
+                .code-editor {
+                    height: 250px; /* Less vertical space */
+                }
+
+                .console {
+                    height: 100px; /* Less vertical space */
+                }
+
+                /* Ensure canvas container doesn't overflow */
+                .canvas-container {
+                    max-width: 100%;
+                    /* Consider adding overflow-x: auto; if needed, but max-width should suffice */
+                }
+
+                /* Adjust button sizes/padding if necessary (optional) */
+                button {
+                    padding: 6px 12px; /* Slightly smaller padding */
+                    font-size: 0.9em;
+                }
+
+                /* Adjust save slots */
+                .save-slot {
+                    min-width: 60px; /* Smaller minimum width */
+                    padding: 6px;
+                }
+
+                /* Fullscreen button adjustments (optional) */
+                .exit-fullscreen {
+                    padding: 6px 10px;
+                    font-size: 0.85em;
+                    /* Recalculate position for the second button if needed */
+                    /* This might require JavaScript if width is dynamic, or simpler fixed pos */
+                }
+                #fullscreenPauseTime {
+                     /* Simple fixed position might be easier for mobile */
+                     right: auto;
+                     left: var(--padding);
+                     /* Or adjust the complex calc if you prefer */
+                     /* right: calc(var(--padding) + 120px + var(--gap)); */ /* Example adjustment */
+                }
+
+            } /* End of @media (max-width: 768px) */
+
+            /* Optional: Add styles for even smaller screens if needed */
+            /*
+            @media (max-width: 480px) {
+                :root {
+                    --padding: 8px;
+                    --gap: 8px;
+                }
+                body {
+                    font-size: 13px;
+                }
+                /* Further adjustments for very small screens */
+            }
+            */
         </style>
     </head>
     <body>
@@ -618,14 +759,12 @@
                                 type="number"
                                 id="canvasX"
                                 placeholder="X"
-                                min="0"
                                 class="var-input"
                             />
                             <input
                                 type="number"
                                 id="canvasY"
                                 placeholder="Y"
-                                min="0"
                                 class="var-input"
                             />
                             <input
@@ -808,11 +947,7 @@
         >
             <canvas id="fullscreenCanvas"></canvas>
             <button class="exit-fullscreen">Exit Full Screen (ESC)</button>
-            <button
-                id="fullscreenPauseTime"
-                class="exit-fullscreen"
-                style="right: 180px"
-            >
+            <button id="fullscreenPauseTime" class="exit-fullscreen">
                 Pause Animation
             </button>
         </div>
@@ -2097,6 +2232,213 @@
                 updateCanvasDisplay();
             }
 
+            // Middle-click/Touch drag for number inputs
+
+            // Configuration
+            const dragSensitivity = 0.1; // Adjusts how much the value changes per pixel dragged. Lower = faster change.
+            const dragPixelsPerStep = 10; // How many pixels to drag for one 'step' increment/decrement.
+
+            let isDraggingInput = false;
+            let dragTargetInput = null;
+            let dragStartX = 0;
+            let dragStartValue = 0;
+            let dragStep = 1; // Default step
+
+            /**
+             * Finds the number input associated with a drag event target.
+             * Searches within the parent '.var-row'.
+             * @param {EventTarget} target - The element where the event originated.
+             * @returns {HTMLInputElement|null} The associated number input or null.
+             */
+            function findNumberInputForDrag(target) {
+                const varRow = target.closest(".var-row");
+                if (varRow) {
+                    // Prioritize number input directly, then search within row
+                    if (
+                        target.matches('input[type="number"]') &&
+                        !target.disabled &&
+                        !target.readOnly
+                    ) {
+                        return target;
+                    }
+                    const input = varRow.querySelector(
+                        'input[type="number"]:not(:disabled):not([readonly])',
+                    );
+                    return input;
+                }
+                return null;
+            }
+
+            /**
+             * Calculates the number of decimal places based on the step attribute.
+             * @param {string|number} stepAttr - The step attribute value.
+             * @returns {number} The number of decimal places.
+             */
+            function getDecimalPlaces(stepAttr) {
+                if (
+                    !stepAttr ||
+                    stepAttr === "any" ||
+                    isNaN(parseFloat(stepAttr))
+                ) {
+                    return 2; // Default decimal places if step is invalid or 'any'
+                }
+                const stepStr = String(stepAttr);
+                const decimalPointIndex = stepStr.indexOf(".");
+                if (decimalPointIndex === -1) {
+                    return 0; // Integer step
+                }
+                return stepStr.length - decimalPointIndex - 1;
+            }
+
+            function handleDragStart(event) {
+                const targetInput = findNumberInputForDrag(event.target);
+                if (!targetInput) return; // Not a valid target
+
+                let isMiddleClick =
+                    event.type === "mousedown" && event.button === 1;
+                let isTouch = event.type === "touchstart";
+
+                if (!isMiddleClick && !isTouch) return; // Only middle mouse or touch
+
+                isDraggingInput = true;
+                dragTargetInput = targetInput;
+                dragStartValue = parseFloat(targetInput.value) || 0;
+
+                // Determine step value
+                const stepAttr = targetInput.step;
+                if (stepAttr && stepAttr !== "any") {
+                    dragStep = parseFloat(stepAttr);
+                } else {
+                    // Basic heuristic for default step if not specified
+                    const minVal = parseFloat(targetInput.min);
+                    if (!isNaN(minVal) && minVal % 1 !== 0) {
+                        dragStep = 0.1; // Assume decimal if min is decimal
+                    } else {
+                        dragStep = 1; // Default to integer step
+                    }
+                }
+                // Ensure dragStep is valid
+                if (isNaN(dragStep) || dragStep <= 0) dragStep = 1;
+
+                if (isTouch) {
+                    dragStartX = event.touches[0].clientX;
+                    // Add touch move/end listeners to the document
+                    document.addEventListener("touchmove", handleDragMove, {
+                        passive: false,
+                    }); // Need passive:false to preventDefault scroll
+                    document.addEventListener("touchend", handleDragEnd);
+                    document.addEventListener("touchcancel", handleDragEnd);
+                } else {
+                    dragStartX = event.clientX;
+                    // Add mouse move/up listeners to the document
+                    document.addEventListener("mousemove", handleDragMove);
+                    document.addEventListener("mouseup", handleDragEnd);
+                    document.addEventListener("mouseleave", handleDragEnd); // Stop if mouse leaves window
+                    event.preventDefault(); // Prevent default middle-click actions (scroll/paste)
+                }
+
+                // Optional: Add visual feedback
+                document.body.style.cursor = "ew-resize"; // Change cursor
+                dragTargetInput.closest(".var-row")?.classList.add("dragging");
+            }
+
+            function handleDragMove(event) {
+                if (!isDraggingInput || !dragTargetInput) return;
+
+                let currentX = 0;
+                if (event.type === "touchmove") {
+                    if (event.touches.length === 0) return; // Should not happen, but safety check
+                    currentX = event.touches[0].clientX;
+                    event.preventDefault(); // Prevent scrolling during swipe
+                } else {
+                    currentX = event.clientX;
+                }
+
+                const deltaX = currentX - dragStartX;
+
+                // Calculate change based on pixels dragged and step
+                const stepsMoved = Math.round(deltaX / dragPixelsPerStep);
+                let newValue = dragStartValue + stepsMoved * dragStep;
+
+                // Clamp value within min/max bounds
+                const minVal = parseFloat(dragTargetInput.min);
+                const maxVal = parseFloat(dragTargetInput.max);
+                if (!isNaN(minVal)) {
+                    newValue = Math.max(minVal, newValue);
+                }
+                if (!isNaN(maxVal)) {
+                    newValue = Math.min(maxVal, newValue);
+                }
+
+                // Round to appropriate decimal places based on step
+                const decimalPlaces = getDecimalPlaces(dragTargetInput.step);
+                newValue = parseFloat(newValue.toFixed(decimalPlaces));
+
+                // Update the input value only if it changed
+                if (dragTargetInput.value !== String(newValue)) {
+                    dragTargetInput.value = newValue;
+                    // Dispatch change event so other listeners react
+                    dragTargetInput.dispatchEvent(new Event("change"));
+                    // Dispatch input event for live updates if needed by other parts
+                    dragTargetInput.dispatchEvent(new Event("input"));
+                }
+            }
+
+            function handleDragEnd(event) {
+                if (!isDraggingInput) return;
+
+                // Remove document-level listeners
+                if (event.type.startsWith("touch")) {
+                    document.removeEventListener("touchmove", handleDragMove);
+                    document.removeEventListener("touchend", handleDragEnd);
+                    document.removeEventListener("touchcancel", handleDragEnd);
+                } else {
+                    document.removeEventListener("mousemove", handleDragMove);
+                    document.removeEventListener("mouseup", handleDragEnd);
+                    document.removeEventListener("mouseleave", handleDragEnd);
+                }
+
+                // Reset state
+                isDraggingInput = false;
+
+                // Optional: Remove visual feedback
+                document.body.style.cursor = ""; // Reset cursor
+                dragTargetInput
+                    ?.closest(".var-row")
+                    ?.classList.remove("dragging");
+
+                dragTargetInput = null; // Clear reference
+            }
+
+            // Attach listeners to a suitable container (e.g., document body or specific sections)
+            // Using document.body allows this to work even if inputs are added dynamically.
+            document.body.addEventListener("mousedown", handleDragStart);
+            document.body.addEventListener("touchstart", handleDragStart, {
+                passive: true,
+            }); // Use passive:true for touchstart if not preventing default scroll initially
+
+            // Prevent the default context menu on middle-click for the specific rows
+            // to avoid conflicts if the drag doesn't start immediately.
+            document.querySelectorAll(".var-row").forEach((row) => {
+                row.addEventListener("contextmenu", (event) => {
+                    if (event.button === 1) {
+                        // If middle mouse button caused the contextmenu event
+                        const input = findNumberInputForDrag(event.target);
+                        if (input) {
+                            event.preventDefault(); // Prevent context menu only if related to a number input row
+                        }
+                    }
+                });
+            });
+
+            // Optional: Add a CSS class for visual feedback during drag
+            /*
+            .var-row.dragging {
+                cursor: ew-resize;
+                background-color: rgba(255, 255, 255, 0.1); // Example highlight
+            }
+            */
+
             // ==================== EVENT LISTENERS ====================
 
             // Initialize WebGL
@@ -2541,11 +2883,8 @@
                 }
 
                 bgColor = "#000000";
-                useTransparent = false;
                 bgColorInput.value = bgColor;
                 bgColorPreview.style.backgroundColor = bgColor;
-                transCanvas.checked = false;
-
                 zoomLevel = 1;
                 zoomSlider.value = 1;
                 zoomInput.value = 1;
