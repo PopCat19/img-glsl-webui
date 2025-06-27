@@ -8,27 +8,28 @@
             /* ==================== CSS VARIABLES ==================== */
             :root {
                 /* ==================== COLOR SCHEME ==================== */
-                --background: var(--bg-dark); /* Main background */
-                --bg-dark: #1e0b10;
-                --bg-panel: #ff99b21f;
-                --bg-console: #000000;
-                --border: #ff99b21f;
-                --border-input: #ff99b21f;
-                --text: #ff99b2;
-                --btn: #ff99b21f;
-                --btn-hover: #ff99b252;
-                --btn-active: #ffc2d1;
-                --btn-active-text-color: #1e0b10;
-                --btn-danger: #ff477552;
-                --btn-danger-hover: #ff477552;
-                --btn-danger-text: #ff99b2;
-                --console-text: #ff99b2;
-                --h1-color: #ffc2d1;
-                --h2-color: #ffc2d1;
-                --h3-color: #ffc2d1;
-                --slider-color: var(--btn-hover);
-                --btn-border-active: #ff99b2;
-                --label-color: var(--text);
+                /* Rose Pine Base Theme */
+                --background: #191724; /* Base */
+                --bg-dark: #191724; /* Base */
+                --bg-panel: #1f1d2e; /* Surface */
+                --bg-console: #191724; /* Base */
+                --border: #26233a; /* Overlay */
+                --border-input: #26233a; /* Overlay */
+                --text: #e0def4; /* Text */
+                --btn: #26233a; /* Overlay */
+                --btn-hover: #403d52; /* Highlight Med */
+                --btn-active: #c4a7e7; /* Iris */
+                --btn-active-text-color: #191724; /* Base for contrast */
+                --btn-danger: #eb6f92; /* Love */
+                --btn-danger-hover: #eb6f9280; /* Love with opacity */
+                --btn-danger-text: #e0def4; /* Text */
+                --console-text: #e0def4; /* Text */
+                --h1-color: #ebbcba; /* Rose */
+                --h2-color: #f6c177; /* Gold */
+                --h3-color: #9ccfd8; /* Foam */
+                --slider-color: #31748f; /* Pine */
+                --btn-border-active: #c4a7e7; /* Iris */
+                --label-color: #908caa; /* Subtle */
                 --canvas-max-height: 70vh;
 
                 /* ==================== FORM CONTROLS ==================== */
@@ -58,15 +59,15 @@
                 }
 
                 /* ==================== FULLSCREEN ==================== */
-                --fullscreen-bg: rgba(0, 0, 0, 0.9);
+                --fullscreen-bg: rgba(25, 23, 36, 0.95); /* Base with opacity */
                 /* Using theme vars as base, but could be different if needed */
                 --exit-btn-bg: var(--btn);
                 --exit-btn-hover-bg: var(--btn-hover);
                 --exit-btn-text: var(--text);
-                --exit-btn-hover-bg: rgba(30, 30, 30, 0.8);
+                --exit-btn-hover-bg: var(--btn-hover);
 
                 /* ==================== TRANSPARENCY GRID ==================== */
-                --grid-color: #ff99b21f;
+                --grid-color: #6e6a86; /* Muted */
                 --grid-size: 16px;
 
                 /* ==================== SPACING & SIZING ==================== */
@@ -109,7 +110,7 @@
             }
 
             .github-link a {
-                color: #FF4775; /* Changed from var(--text) */
+                color: #eb6f92; /* Love - Rose Pine accent */
                 text-decoration: none; /* Optional: remove underline */
             }
 
@@ -416,9 +417,9 @@
             input[type="checkbox"] {
                 appearance: none;
                 -webkit-appearance: none;
-                width: var(--checkbox-size);
-                height: var(--checkbox-size);
-                border: var(--border-thickness) solid var(--checkbox-border);
+                width: 18px;
+                height: 18px;
+                border: var(--border-thickness) solid var(--border);
                 background-color: var(--bg-panel);
                 border-radius: 4px;
                 position: relative;
@@ -427,7 +428,7 @@
             }
 
             input[type="checkbox"]:hover {
-                background-color: var(--checkbox-hover);
+                background-color: var(--btn-hover);
             }
 
             input[type="checkbox"]:checked {
