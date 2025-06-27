@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>GLSL Image Shader</title>
+        <link rel="stylesheet" href="css/styles.css" />
+    </head>
+    <body>
+        <!-- ==================== MAIN LAYOUT ==================== -->
+        <div class="container">
+            <h1>GLSL Image Shader</h1>
+            <p class="github-link">
+                <a
+                    href="https://github.com/PopCat19/img-glsl-webui"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >https://github.com/PopCat19/img-glsl-webui</a
+                >
+            </p>
+            <div class="row">
+                <!-- ==================== INPUT COLUMN ==================== -->
+                <div class="col">
+                    <h2>Input</h2>
+
+                    <!-- Image Loading Controls -->
+                    <div>
+                        <button id="loadImage">Load Image</button>
+                        <button
+                            id="unloadImage"
+                            type="button"
+                            style="display: none"
+                        >
+                            Unload Image
+                        </button>
+                        <input
+                            type="file"
+                            id="imageInput"
+                            accept="image/*"
+                            style="display: none"
+                        />
+                    </div>
+
+                    <!-- External Image URL Input -->
+                    <div class="external-image-row var-row">
+                        <input
+                            type="text"
+                            id="externalImageUrl"
+                            placeholder="Enter external image URL"
+                            class="var-input"
+                        />
+                        <button
+                            id="loadImageByUrl"
+                            type="button"
+                            style="display: none"
+                        >
+                            Load External Image
+                        </button>
+                        <button
+                            id="clearExternalUrl"
+                            type="button"
+                            style="display: none"
+                            class="danger"
+                        >
+                            Clear Link
+                        </button>
+                    </div>
+
+                    <!-- Shader Controls -->
+                    <h3>Shader Code</h3>
+                    <div class="var-row">
+                        <button id="updateShader" type="button">
+                            Apply/Update Shader
+                        </button>
+                        <button id="toggleShader" type="button">
+                            Toggle Shader
+                        </button>
+                        <button id="loadShader">Load Shader</button>
+                        <button id="saveCurrentSlot">Save Current Slot</button>
+                        <button
+                            id="unloadSlot"
+                            type="button"
+                            style="display: none"
+                        >
+                            Unload Active Slot
+                        </button>
+                        <button id="pauseTime">Pause Time</button>
+                        <div class="history-controls">
+                            <button id="undoButton" title="Undo">↩</button>
+                            <button id="redoButton" title="Redo">↪</button>
+                        </div>
+                        <input
+                            type="file"
+                            id="shaderInput"
+                            accept=".glsl,.frag,.txt"
+                            style="display: none"
+                        />
+                    </div>
+
+                    <!-- Save Slots -->
+                    <div class="save-slots">
+                        <div class="save-slot" data-slot="1">Slot 1</div>
+                        <div class="save-slot" data-slot="2">Slot 2</div>
+                        <div class="save-slot" data-slot="3">Slot 3</div>
+                        <div class="save-slot" data-slot="4">Slot 4</div>
+                        <div class="save-slot" data-slot="5">Slot 5</div>
+                    </div>
+
+                    <!-- Shader Code Editor -->
+                    <div class="code-editor">
+                        <textarea
+                            id="shaderCode"
+                            placeholder="Enter GLSL shader code here..."
+                        ></textarea>
+                    </div>
+
+                    <!-- Canvas Settings -->
+                    <div class="control-section">
+                        <h3>Canvas Settings</h3>
+                        <div class="var-row">
+                            <span class="var-name">Background:</span>
+                            <input
+                                type="text"
+                                id="canvasBackground"
+                                value="#000000"
+                                class="var-input"
+                                placeholder="Hex color e.g. #000000"
+                            />
+                            <div
+                                class="color-preview"
+                                id="bgColorPreview"
+                                style="background-color: #000000"
+                            ></div>
+                            <button id="applyBackground">Apply</button>
+                        </div>
+                        <div class="var-row">
+                            <div class="checkbox-wrapper">
+                                <input
+                                    type="checkbox"
+                                    id="transparentCanvas"
+                                    checked
+                                />
+                                <label for="transparentCanvas"
+                                    >Transparent Canvas</label
+                                >
+                            </div>
+                        </div>
+                        <div class="var-row">
+                            <div class="var-row">
+                                <span class="var-name">Zoom:</span>
+                                <input
+                                    type="number"
+                                    id="zoomInput"
+                                    value="1"
+                                    min="0.1"
+                                    max="5"
+                                    step="0.1"
+                                    style="width: 60px"
+                                />
+                                <button id="resetZoom">Reset</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transform Controls -->
+                    <div class="transform-controls">
+                        <h3>Transform</h3>
+                        <div class="var-row">
+                            <span class="var-name">Canvas Position:</span>
+                            <input
+                                type="number"
+                                id="canvasX"
+                                placeholder="X"
+                                class="var-input"
+                            />
+                            <input
+                                type="number"
+                                id="canvasY"
+                                placeholder="Y"
+                                class="var-input"
+                            />
+                            <input
+                                type="number"
+                                id="canvasWidth"
+                                placeholder="Width"
+                                min="1"
+                                class="var-input"
+                            />
+                            <input
+                                type="number"
+                                id="canvasHeight"
+                                placeholder="Height"
+                                min="1"
+                                class="var-input"
+                            />
+                            <button id="resetCanvas">Reset</button>
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Aspect Ratio:</span>
+                            <input
+                                type="number"
+                                id="aspectW"
+                                placeholder="Width"
+                                min="1"
+                                value="16"
+                                class="var-input"
+                            />
+                            <span>:</span>
+                            <input
+                                type="number"
+                                id="aspectH"
+                                placeholder="Height"
+                                min="1"
+                                value="9"
+                                class="var-input"
+                            />
+                            <button id="applyAspect">Apply</button>
+                            <button id="resetAspect">Reset</button>
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Rotation:</span>
+                            <div class="rotation-presets">
+                                <button
+                                    type="button"
+                                    class="rotation-preset"
+                                    data-rotation="0"
+                                >
+                                    0°
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rotation-preset"
+                                    data-rotation="90"
+                                >
+                                    90°
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rotation-preset"
+                                    data-rotation="180"
+                                >
+                                    180°
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rotation-preset"
+                                    data-rotation="270"
+                                >
+                                    270°
+                                </button>
+                            </div>
+                            <button id="resetRotation">Reset</button>
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Mirror:</span>
+                            <button id="mirrorX">X</button>
+                            <button id="mirrorY">Y</button>
+                            <button id="resetMirror">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== OUTPUT COLUMN ==================== -->
+                <div class="col">
+                    <h2>Output</h2>
+                    <div class="canvas-container" id="canvasContainer">
+                        <canvas id="canvas"></canvas>
+                    </div>
+
+                    <div class="output-actions">
+                        <button id="fullscreenPreview">
+                            Full Screen Preview
+                        </button>
+                        <button id="resetAllParams" class="danger">
+                            Reset All Parameters
+                        </button>
+                    </div>
+
+                    <!-- Export Image Controls -->
+                    <div class="control-section">
+                        <h3>Export Image</h3>
+                        <div class="var-row">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="exportWithAlpha" />
+                                <label for="exportWithAlpha"
+                                    >Export with Alpha</label
+                                >
+                            </div>
+                        </div>
+                        <div class="var-row">
+                            <button id="savePNG">Save as PNG</button>
+                            <button id="saveJPG">Save as JPG</button>
+                        </div>
+                    </div>
+
+                    <!-- Export Animation Controls -->
+                    <div class="control-section">
+                        <h3>Export Animation</h3>
+                        <div class="var-row">
+                            <span class="var-name">FPS:</span>
+                            <input
+                                type="number"
+                                id="exportFps"
+                                min="1"
+                                max="60"
+                                value="30"
+                                class="var-input"
+                            />
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Bitrate (Mbps):</span>
+                            <input
+                                type="number"
+                                id="exportBitrate"
+                                min="1"
+                                max="50"
+                                value="5"
+                                class="var-input"
+                            />
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Duration (sec):</span>
+                            <input
+                                type="number"
+                                id="animationDuration"
+                                min="1"
+                                value="5"
+                                class="var-input"
+                            />
+                        </div>
+                        <div class="var-row">
+                            <span class="var-name">Start Time (sec):</span>
+                            <input
+                                type="number"
+                                id="exportStartTime"
+                                min="0"
+                                value="0"
+                                step="1"
+                                class="var-input"
+                            />
+                        </div>
+                        <div class="var-row">
+                            <button id="exportMp4">Export as WebM</button>
+                        </div>
+                    </div>
+
+                    <!-- Console Output -->
+                    <h3>Console</h3>
+                    <div id="console" class="console"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== FULLSCREEN PREVIEW ==================== -->
+        <div
+            id="fullscreenContainer"
+            style="display: none"
+            class="fullscreen-preview"
+        >
+            <canvas id="fullscreenCanvas"></canvas>
+            <button class="exit-fullscreen">Exit Full Screen (ESC)</button>
+            <button id="fullscreenPauseTime" class="exit-fullscreen">
+                Pause Animation
+            </button>
+        </div>
+
+        <!-- ==================== SHADER TEMPLATES ==================== -->
+        <script type="x-shader/x-fragment" id="defaultFragmentShader">
+            precision mediump float;
+            varying vec2 v_texcoord;
+            uniform sampler2D tex;
+            uniform float time;
+            void main() {
+              vec4 color = texture2D(tex, v_texcoord);
+              gl_FragColor = color;
+            }
+        </script>
+        <script type="x-shader/x-vertex" id="vertexShader">
+            attribute vec2 a_position;
+            attribute vec2 a_texcoord;
+            varying vec2 v_texcoord;
+            void main() {
+              gl_Position = vec4(a_position, 0.0, 1.0);
+              v_texcoord = a_texcoord;
+            }
+        </script>
+
+        <!-- ==================== SCRIPTS ==================== -->
+        <script src="js/default-shaders.js"></script>
+        <script src="js/webgl-utils.js"></script>
+        <script src="js/shader-compiler.js"></script>
+        <script src="js/image-handler.js"></script>
+        <script src="js/ui-controls.js"></script>
+        <script src="js/export-utils.js"></script>
+        <script src="js/storage-manager.js"></script>
+        <script src="js/main.js"></script>
+    </body>
+</html>

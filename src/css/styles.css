@@ -1,0 +1,623 @@
+/* ==================== CSS VARIABLES ==================== */
+:root {
+    /* ==================== COLOR SCHEME ==================== */
+    --background: var(--bg-dark); /* Main background */
+    --bg-dark: #1e0b10;
+    --bg-panel: #ff99b21f;
+    --bg-console: #000000;
+    --border: #ff99b21f;
+    --border-input: #ff99b21f;
+    --text: #ff99b2;
+    --btn: #ff99b21f;
+    --btn-hover: #ff99b252;
+    --btn-active: #ffc2d1;
+    --btn-active-text-color: #1e0b10;
+    --btn-danger: #ff477552;
+    --btn-danger-hover: #ff477552;
+    --btn-danger-text: #ff99b2;
+    --console-text: #ff99b2;
+    --h1-color: #ffc2d1;
+    --h2-color: #ffc2d1;
+    --h3-color: #ffc2d1;
+    --slider-color: var(--btn-hover);
+    --btn-border-active: #ff99b2;
+    --label-color: var(--text);
+    --canvas-max-height: 70vh;
+
+    /* ==================== FORM CONTROLS ==================== */
+    textarea,
+    input {
+        background-color: var(--bg-panel);
+        color: var(--text);
+        border: var(--border-thickness) solid var(--border-input);
+        border-radius: var(--border-radius);
+        padding: 8px;
+        width: 100%;
+        box-sizing: border-box;
+        font-family: monospace;
+        transition: border-color 0.2s ease-in-out;
+    }
+
+    textarea:focus,
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="file"]:focus {
+        outline: none;
+        border-color: var(--btn-border-active);
+    }
+
+    label {
+        color: var(--label-color);
+    }
+
+    /* ==================== FULLSCREEN ==================== */
+    --fullscreen-bg: rgba(0, 0, 0, 0.9);
+    /* Using theme vars as base, but could be different if needed */
+    --exit-btn-bg: var(--btn);
+    --exit-btn-hover-bg: var(--btn-hover);
+    --exit-btn-text: var(--text);
+    --exit-btn-hover-bg: rgba(30, 30, 30, 0.8);
+
+    /* ==================== TRANSPARENCY GRID ==================== */
+    --grid-color: #ff99b21f;
+    --grid-size: 16px;
+
+    /* ==================== SPACING & SIZING ==================== */
+    --gap: 16px;
+    --border-thickness: 2px;
+    --border-radius: 8px;
+    --margin: 16px;
+    --margin-small: 8px;
+    --button-margin: 4px 0 4px 0;
+    --padding: 16px;
+    --padding-small: 8px;
+    --console-padding: var(--padding);
+
+    /* ==================== TYPOGRAPHY ==================== */
+    --font-family: sans-serif;
+    --console-font-size: 1em;
+}
+
+/* ==================== BASE STYLES ==================== */
+body {
+    background-color: var(--background);
+    color: var(--text);
+    font-family: var(--font-family);
+    margin: var(--padding);
+}
+
+h1 {
+    position: center;
+    text-align: center;
+    margin: var(--margin) 0 var(--margin) 0;
+}
+
+.github-link {
+    text-align: center; /* Match h1 alignment */
+    font-size: 0.8em; /* Smaller font size */
+    margin-top: var(--margin-small); /* Space below h1 */
+    margin-bottom: var(--margin); /* Space above next element */
+    line-height: 1; /* Adjust line height if needed */
+}
+
+.github-link a {
+    color: #FF4775; /* Changed from var(--text) */
+    text-decoration: none; /* Optional: remove underline */
+}
+
+.github-link a:hover {
+    text-decoration: underline; /* Optional: add underline on hover */
+    color: var(--btn-border-active); /* Optional: highlight color on hover */
+}
+
+h2,
+h3 {
+    margin: var(--margin) 0 var(--margin) 0;
+}
+
+/* ==================== LAYOUT STRUCTURE ==================== */
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+}
+
+.row {
+    display: flex;
+    gap: var(--gap);
+    flex-wrap: wrap;
+}
+
+.col {
+    flex: 1;
+    min-width: 300px;
+}
+
+/* ==================== CANVAS & PREVIEW ==================== */
+.canvas-container {
+    max-width: 100%;
+    background-color: var(--bg-panel);
+    border: none;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    width: fit-content;
+    padding: 0;
+}
+
+.canvas-container.transparent {
+    background-image:
+        linear-gradient(
+            45deg,
+            var(--grid-color) 25%,
+            transparent 25%
+        ),
+        linear-gradient(
+            -45deg,
+            var(--grid-color) 25%,
+            transparent 25%
+        ),
+        linear-gradient(
+            45deg,
+            transparent 75%,
+            var(--grid-color) 75%
+        ),
+        linear-gradient(
+            -45deg,
+            transparent 75%,
+            var(--grid-color) 75%
+        );
+    background-size: var(--grid-size) var(--grid-size);
+    background-position:
+        0 0,
+        0 10px,
+        10px -10px,
+        -10px 0px;
+}
+
+canvas {
+    background-color: transparent;
+    border: none;
+    display: block;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    margin: 0;
+    object-fit: contain;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    -ms-interpolation-mode: nearest-neighbor;
+}
+
+/* ==================== FORM CONTROLS ==================== */
+textarea,
+input {
+    background-color: var(--bg-panel);
+    color: var(--text);
+    border: var(--border-thickness) solid var(--border-input);
+    border-radius: var(--border-radius);
+    padding: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: monospace;
+}
+
+label {
+    color: var(--label-color);
+}
+
+/* ==================== CODE EDITOR ==================== */
+.code-editor {
+    height: 400px;
+    background-color: var(--bg-panel);
+    border: var(--border-thickness) solid var(--border-input); /* Existing border */
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    transition: border-color 0.2s ease-in-out;
+}
+
+.code-editor:focus-within {
+    border-color: var(
+        --btn-border-active
+    ); /* Highlight border when textarea inside is focused */
+}
+
+.code-editor textarea {
+    width: 100%;
+    height: 100%;
+    resize: none;
+    border: none; /* Textarea itself has no border */
+    padding: 8px;
+    background-color: transparent;
+    line-height: 1.5;
+    tab-size: 2;
+    font-family: monospace;
+    color: var(--text);
+    outline: none; /* Remove focus outline from the textarea itself */
+}
+
+/* ==================== BUTTONS ==================== */
+button {
+    background-color: var(--btn);
+    color: var(--text);
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    margin: 5px 0;
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    background-color: var(--btn-hover);
+}
+
+button.highlight-border {
+    border: var(--border-thickness) solid var(--btn-border-active);
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+button.active {
+    background-color: var(--btn-active);
+    color: var(--btn-active-text-color);
+}
+
+button.danger {
+    background-color: var(--btn);
+    color: var(--btn-danger-text);
+}
+
+button.danger:hover {
+    background-color: var(--btn-danger-hover);
+}
+
+button.border-active {
+    border: var(--border-thickness) solid var(--btn-border-active);
+}
+
+/* ==================== CONSOLE ==================== */
+.console {
+    background-color: var(--bg-console);
+    color: var(--console-text);
+    padding: var(--console-padding);
+    font-family: monospace;
+    font-size: var(--console-font-size);
+    height: 150px;
+    overflow-y: auto;
+    margin-top: 10px;
+    white-space: pre-wrap;
+    border-radius: var(--border-radius);
+}
+
+/* ==================== CONTROL SECTIONS ==================== */
+.control-section {
+    background-color: var(--bg-panel);
+    padding: var(--padding-small) var(--padding) var(--padding)
+        var(--padding);
+    border-radius: var(--border-radius);
+    margin: var(--margin) 0 0 0;
+}
+
+.output-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+    flex-wrap: wrap;
+    border: var(--border-thickness);
+    border-style: solid;
+    border-color: var(--border);
+    padding: var(--padding-small);
+    border-radius: var(--border-radius);
+    margin: var(--margin) 0 0 0;
+}
+
+.transform-controls {
+    margin: var(--margin) 0;
+    padding: var(--padding);
+    background-color: var(--bg-panel);
+    border-radius: var(--border-radius);
+}
+
+/* ==================== VARIABLE ROWS ==================== */
+.var-row {
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+    flex-wrap: wrap;
+    border-color: var(--border);
+    border-radius: var(--border-radius);
+    margin: var(--margin) 0 0 0;
+}
+
+.var-name {
+    width: 150px;
+    flex-shrink: 0;
+}
+
+.var-input {
+    flex: 1;
+    margin: 4px 0 4px 0;
+}
+
+.external-image-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* ==================== SAVE SLOTS ==================== */
+.save-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px; /* Slightly smaller gap might look better */
+    margin: var(--margin) 0;
+}
+
+.save-slot {
+    background-color: var(--btn);
+    padding: 8px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.save-slot:hover {
+    background-color: var(--btn-hover);
+}
+
+.save-slot:active {
+    transform: scale(0.98);
+}
+
+/* Active state only applies to save slots */
+.save-slot.active {
+    background-color: var(--btn-active);
+    color: var(--btn-active-text-color); /* Was var(--background) */
+}
+
+@media (max-width: 768px) {
+    .save-slots {
+        gap: 5px; /* Even smaller gap on mobile */
+    }
+
+    .save-slot {
+        min-width: 60px; /* Adjust min-width for all */
+        padding: 6px; /* Adjust padding for all */
+        font-size: 0.9em; /* Adjust font size for all */
+    }
+}
+/* ==================== CHECKBOXES ==================== */
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    margin-right: 15px;
+}
+
+input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: var(--checkbox-size);
+    height: var(--checkbox-size);
+    border: var(--border-thickness) solid var(--checkbox-border);
+    background-color: var(--bg-panel);
+    border-radius: 4px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+input[type="checkbox"]:hover {
+    background-color: var(--checkbox-hover);
+}
+
+input[type="checkbox"]:checked {
+    background-color: var(--btn-active);
+}
+
+/* ==================== NUMBER INPUTS ==================== */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* ==================== RANGE INPUTS ==================== */
+input[type="range"] {
+    accent-color: var(--slider-color);
+}
+
+/* ==================== FULLSCREEN PREVIEW ==================== */
+.fullscreen-preview {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--fullscreen-bg);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.fullscreen-preview canvas {
+    max-width: 95vw;
+    max-height: 95vh;
+    object-fit: contain;
+}
+
+.exit-fullscreen {
+    position: absolute;
+    top: var(--padding); /* Use theme padding for top spacing */
+    right: var(--padding); /* Use theme padding for right spacing */
+    background: var(--btn); /* Use standard button background */
+    color: var(--text); /* Use standard button text color */
+    border: none;
+    border-radius: var(
+        --border-radius
+    ); /* Keep consistent radius */
+    padding: 8px 16px; /* Use standard button padding */
+    cursor: pointer;
+    transition: all 0.2s ease; /* Add standard transition */
+}
+
+.exit-fullscreen:hover {
+    background: var(--btn-hover); /* Use standard button hover */
+}
+
+.exit-fullscreen:active {
+    transform: scale(0.98); /* Standard active effect */
+    background: var(--btn-active); /* Use standard button active */
+}
+
+/* Remove the inline style from the HTML for #fullscreenPauseTime */
+#fullscreenPauseTime {
+    /* Adjust right position. This is an estimate, may need tweaking. */
+    /* It assumes the first button is roughly 180px wide + theme gap */
+    right: calc(var(--padding) + 180px + var(--gap));
+}
+
+/* ==================== DRAG & DROP ==================== */
+.canvas-container.drag-over {
+    border: 2px dashed var(--btn-active) !important;
+    background-color: var(--btn-hover) !important;
+}
+
+@media (max-width: 768px) {
+    /* Reduce overall padding/margins for smaller screens */
+    :root {
+        --padding: 12px;
+        --padding-small: 6px;
+        --margin: 12px;
+        --margin-small: 6px;
+        --gap: 12px;
+    }
+
+    body {
+        margin: var(
+            --padding-small
+        ); /* Reduce body margin */
+        font-size: 14px; /* Slightly smaller base font */
+    }
+
+    h1 {
+        font-size: 1.5em; /* Smaller main heading */
+    }
+
+    h2,
+    h3 {
+        font-size: 1.2em; /* Smaller section headings */
+    }
+
+    /* Stack the main input and output columns */
+    .row {
+        flex-direction: column;
+    }
+
+    /* Allow columns to take full width when stacked */
+    .col {
+        min-width: 100%; /* Override min-width */
+        width: 100%;
+    }
+
+    /* Adjust variable rows for better wrapping */
+    .var-row {
+        /* Allow items to wrap more freely */
+    }
+
+    .var-name {
+        width: 100%; /* Let label take full width */
+        margin-bottom: var(
+            --margin-small
+        ); /* Add space below label when it wraps */
+        text-align: left; /* Ensure alignment */
+        flex-shrink: 1; /* Allow shrinking if needed */
+    }
+
+    .var-input {
+        min-width: 150px; /* Ensure input has some minimum space */
+        flex-grow: 1; /* Allow input to grow */
+    }
+
+    /* Specific adjustments for multi-input rows */
+    .transform-controls .var-row input[type="number"],
+    .external-image-row .var-input {
+        /* Allow multiple inputs per row to share space better */
+        flex-basis: 45%; /* Roughly two inputs per line before wrapping */
+        flex-grow: 1;
+    }
+
+    /* Reduce height of code editor and console */
+    .code-editor {
+        height: 250px; /* Less vertical space */
+    }
+
+    .console {
+        height: 100px; /* Less vertical space */
+    }
+
+    /* Ensure canvas container doesn't overflow */
+    .canvas-container {
+        max-width: 100%;
+        /* Consider adding overflow-x: auto; if needed, but max-width should suffice */
+    }
+
+    /* Adjust button sizes/padding if necessary (optional) */
+    button {
+        padding: 6px 12px; /* Slightly smaller padding */
+        font-size: 0.9em;
+    }
+
+    /* Adjust save slots */
+    .save-slot {
+        min-width: 60px; /* Smaller minimum width */
+        padding: 6px;
+    }
+
+    /* Fullscreen button adjustments (optional) */
+    .exit-fullscreen {
+        padding: 6px 10px;
+        font-size: 0.85em;
+        /* Recalculate position for the second button if needed */
+        /* This might require JavaScript if width is dynamic, or simpler fixed pos */
+    }
+    #fullscreenPauseTime {
+         /* Simple fixed position might be easier for mobile */
+         right: auto;
+         left: var(--padding);
+         /* Or adjust the complex calc if you prefer */
+         /* right: calc(var(--padding) + 120px + var(--gap)); */ /* Example adjustment */
+    }
+
+} /* End of @media (max-width: 768px) */
+
+/* Optional: Add styles for even smaller screens if needed */
+/*
+@media (max-width: 480px) {
+    :root {
+        --padding: 8px;
+        --gap: 8px;
+    }
+    body {
+        font-size: 13px;
+    }
+    /* Further adjustments for very small screens */
+}
+*/
