@@ -35,7 +35,7 @@
                 /* ==================== FORM CONTROLS ==================== */
                 textarea,
                 input {
-                    background-color: var(--bg-panel);
+                    background-color: var(--background);
                     color: var(--text);
                     border: var(--border-thickness) solid var(--border-input);
                     border-radius: var(--border-radius);
@@ -98,7 +98,7 @@
                 position: center;
                 text-align: center;
                 margin: var(--margin) 0 var(--margin) 0;
-
+                font-weight: bold;
             }
 
             .github-link {
@@ -122,6 +122,7 @@
             h2,
             h3 {
                 margin: var(--margin) 0 var(--margin) 0;
+                font-weight: bold;
             }
 
             /* ==================== LAYOUT STRUCTURE ==================== */
@@ -205,7 +206,7 @@
             /* ==================== FORM CONTROLS ==================== */
             textarea,
             input {
-                background-color: var(--bg-panel);
+                background-color: var(--background);
                 color: var(--text);
                 border: var(--border-thickness) solid var(--border-input);
                 border-radius: var(--border-radius);
@@ -213,6 +214,13 @@
                 width: 100%;
                 box-sizing: border-box;
                 font-family: monospace;
+            }
+
+            /* Textareas on surface panels use surface background */
+            .control-section textarea,
+            .transform-controls textarea,
+            .code-editor textarea {
+                background-color: var(--bg-panel);
             }
 
             label {
@@ -303,6 +311,7 @@
                 margin-top: 10px;
                 white-space: pre-wrap;
                 border-radius: var(--border-radius);
+                border: var(--border-thickness) solid var(--border);
             }
 
             /* ==================== CONTROL SECTIONS ==================== */
