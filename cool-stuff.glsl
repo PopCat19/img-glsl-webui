@@ -16,7 +16,7 @@ uniform float time;
 #define COLOR_DEPTH_ENABLED 0  // Enable color depth reduction
 #define DEBUG_SCANLINE 0       // Toggle scanline effect
 #define DEBUG_VHS_OVERLAY 0    // Toggle VHS double overlay effect
-#define DEBUG_GLITCH   0       // Toggle glitch effect
+#define DEBUG_GLITCH   1       // Toggle glitch effect
 #define DEBUG_DRIFT    0       // Toggle drifting effect
 #define DEBUG_COLOR_TEMP 0     // Toggle color temperature adjustment
 #define DEBUG_VIBRATION 0      // Toggle vertical vibration effect
@@ -33,16 +33,11 @@ uniform float time;
 #define BLOOM_FALLOFF_CURVE   32.0
 
 // Glitch Parameters
-#define GLITCH_STRENGTH        0.1
-#define GLITCH_PROBABILITY     0.1
-#define GLITCH_X_VIBRATION_PROBABILITY 0.6
+#define GLITCH_STRENGTH        1.0
+#define GLITCH_PROBABILITY     0.20
 #define GLITCH_INTERVAL        3.0
-#define GLITCH_DURATION        0.1
-#define GLITCH_BLOCK_SIZE      8.0
-#define GLITCH_DISPLACEMENT    0.01
-#define GLITCH_COLOR_SHIFT     0.0
-#define GLITCH_BLOCK_PROBABILITY 0.3
-#define GLITCH_X_VIBRATION_AMPLITUDE 0.006
+#define GLITCH_DURATION        0.08   // at least 120ms
+#define GLITCH_SPEED           64.0   // configurable bounce speed
 
 // Vignette Parameters
 #define VIGNETTE_STRENGTH      0.4
@@ -268,25 +263,33 @@ vec2 applyDrift(vec2 uv, float time) {
     return uv + driftOffset;
 }
 
-// --- Glitch Effect ---
-vec3 applyGlitch(vec2 uv, float time, vec3 color, float isActive) {
-    vec2 shift = vec2(
-        GLITCH_COLOR_SHIFT * (random(vec2(time)) - 0.5),
-        GLITCH_COLOR_SHIFT * (random(vec2(time + 1.0)) - 0.5)
-    );
-    vec3 distorted = vec3(
-        texture2D(tex, uv + shift).r,
+// --- Analog-Style Glitch Effect (Bouncy) ---
+vec3 applyAnalogGlitch(vec2 uv, float time, vec3 color, float isActive, float tInInterval) {
+    if (isActive < 0.5) return color;
+
+    // Bounce easing (0 → 1 → 0 within duration)
+    float bounce = sin(tInInterval * GLITCH_SPEED * PI);
+    float strength = GLITCH_STRENGTH * bounce;
+
+    // Horizontal tearing (line offset)
+    float line = floor(uv.y * 480.0);
+    float lineNoise = random(vec2(line, time));
+    float tearStrength = step(0.985, lineNoise) * 0.02 * strength;
+    uv.x += tearStrength * (random(vec2(lineNoise, time)) - 0.5);
+
+    // Wavy distortion
+    float wave = sin(uv.y * 40.0 + time * 6.0) * 0.002 * strength;
+    uv.x += wave;
+
+    // Subtle RGB misalignment
+    float shift = 0.0015 * sin(time * 2.0 + uv.y * 10.0) * strength;
+    vec3 analogColor = vec3(
+        texture2D(tex, uv + vec2( shift, 0.0)).r,
         texture2D(tex, uv).g,
-        texture2D(tex, uv - shift).b
+        texture2D(tex, uv - vec2( shift, 0.0)).b
     );
-    float currentInterval = floor(time / GLITCH_INTERVAL);
-    float blockY = floor(uv.y * GLITCH_BLOCK_SIZE);
-    float blockGlitch = step(random(vec2(blockY, currentInterval)), GLITCH_BLOCK_PROBABILITY);
-    float displacement = (random(vec2(blockY, time)) - 0.5) * GLITCH_DISPLACEMENT;
-    vec2 displacedUV = uv + vec2(displacement * isActive * blockGlitch, 0.0);
-    vec3 finalColor = mix(color, distorted, isActive * GLITCH_STRENGTH);
-    finalColor = mix(finalColor, texture2D(tex, displacedUV).rgb, isActive * blockGlitch);
-    return finalColor;
+
+    return mix(color, analogColor, strength);
 }
 
 // --- Main Shader ---
@@ -300,21 +303,12 @@ void main() {
     float seedGlitch = random(vec2(currentInterval));
     float intervalActive = step(seedGlitch, GLITCH_PROBABILITY);
     float isActiveGlitch = intervalActive * step(tInInterval, GLITCH_DURATION);
-    float seedXVib = random(vec2(currentInterval + 100.0));
-    float xVibActive = step(seedXVib, GLITCH_X_VIBRATION_PROBABILITY) * intervalActive;
-    float isActiveXVibration = xVibActive * step(tInInterval, GLITCH_DURATION);
 
     #if DEBUG_DRIFT
         processedUV = applyDrift(processedUV, time);
     #endif
     #if DEBUG_VIBRATION
         processedUV.y += sin(time * VIBRATION_FREQUENCY) * VIBRATION_AMPLITUDE;
-    #endif
-    #if DEBUG_GLITCH
-        float xVib = (random(vec2(time, currentInterval)) - 0.5) *
-                    GLITCH_X_VIBRATION_AMPLITUDE *
-                    isActiveXVibration;
-        processedUV.x += xVib;
     #endif
 
     processedUV = pixelate(processedUV);
@@ -328,7 +322,7 @@ void main() {
     #endif
 
     #if DEBUG_GLITCH
-        color = applyGlitch(processedUV, time, color, isActiveGlitch);
+        color = applyAnalogGlitch(processedUV, time, color, isActiveGlitch, tInInterval);
     #endif
 
     color = applyPixelGrid(processedUV, color);
