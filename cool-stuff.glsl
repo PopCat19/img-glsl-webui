@@ -25,7 +25,7 @@ uniform float time;
 // [Effect Parameters]
 // Bloom Parameters
 #define BLOOM_INTENSITY       0.16
-#define BLOOM_RADIUS          0.006
+#define BLOOM_RADIUS          0.008
 #define BLOOM_SAMPLES         64
 #define BLOOM_TINT            vec3(1.1, 0.9, 0.9)
 #define BLOOM_THRESHOLD       0.0
