@@ -15,12 +15,12 @@ uniform float time;
 #define DEBUG_PIXEL    0       // Toggle pixelation effect
 #define COLOR_DEPTH_ENABLED 0  // Enable color depth reduction
 #define DEBUG_SCANLINE 0       // Toggle scanline effect
-#define DEBUG_VHS_OVERLAY 0    // Toggle VHS double overlay effect
+#define DEBUG_VHS_OVERLAY 1    // Toggle VHS effect
 #define DEBUG_GLITCH   1       // Toggle glitch effect
 #define DEBUG_DRIFT    0       // Toggle drifting effect
 #define DEBUG_COLOR_TEMP 0     // Toggle color temperature adjustment
 #define DEBUG_VIBRATION 1      // Toggle CRT buzz vibration effect
-#define DEBUG_GRAIN     1      // Toggle cinematic grain effect
+#define DEBUG_GRAIN     0      // Toggle cinematic grain effect
 
 // [Effect Parameters]
 // Bloom Parameters
@@ -85,15 +85,14 @@ const float COLOR_TEMPERATURE_STRENGTH = 1.0;
 // Pixelation Effect
 #define PIXEL_GRID_SIZE 360.0
 
-// VHS Overlay Parameters
-#define VHS_OVERLAY_INTENSITY  0.3
-#define VHS_OVERLAY_OFFSET     vec2(0.005, -0.003)
-#define VHS_OVERLAY_SPEED      0.3
-#define VHS_OVERLAY_TINT_RGB   vec3(1.5, 0.8, 1.2)
-#define VHS_OVERLAY_NOISE_SCALE 512.0
-#define VHS_OVERLAY_FREQ       0.3
-#define VHS_OVERLAY_DISPLACEMENT_SCALE 0.333
-#define VHS_OVERLAY_WAVE_AMPLITUDE 0.1
+// VHS Overlay Parameters (Rewritten)
+#define VHS_INTENSITY        0.35
+#define VHS_JITTER_STRENGTH  0.004
+#define VHS_WAVE_FREQ        2.0
+#define VHS_WAVE_AMPLITUDE   0.003
+#define VHS_COLOR_SHIFT      0.0015
+#define VHS_NOISE_BAND_FREQ  0.8
+#define VHS_NOISE_BAND_STRENGTH 0.25
 
 // Grain Parameters
 #define GRAIN_INTENSITY 0.08
@@ -236,18 +235,34 @@ float applyScanlines(vec2 uv, float time) {
     return 1.0 - scan * SCANLINE_OPACITY;
 }
 
-// --- VHS Double Overlay Effect ---
-vec3 applyVHSOverlay(vec2 uv, float time, vec3 originalColor) {
-    vec2 displacement = VHS_OVERLAY_OFFSET * VHS_OVERLAY_DISPLACEMENT_SCALE *
-        (1.0 + random(uv * VHS_OVERLAY_NOISE_SCALE + time) * 0.5);
-    vec3 overlay = texture2D(tex, uv + displacement).rgb;
-    overlay.r = texture2D(tex, uv + displacement * 1.2).r;
-    overlay.b = texture2D(tex, uv - displacement * 0.8).b;
-    return mix(
-        originalColor,
-        overlay * VHS_OVERLAY_TINT_RGB * (1.0 + sin(time * VHS_OVERLAY_FREQ) * VHS_OVERLAY_WAVE_AMPLITUDE),
-        VHS_OVERLAY_INTENSITY * (0.8 + random(uv + time) * 0.2)
+// --- VHS Effect (Rewritten) ---
+vec3 applyVHSEffect(vec2 uv, float time, vec3 originalColor) {
+#if DEBUG_VHS_OVERLAY
+    // Horizontal jitter
+    float jitter = (random(vec2(time, uv.y)) - 0.5) * VHS_JITTER_STRENGTH;
+    uv.x += jitter;
+
+    // Vertical wave distortion
+    uv.y += sin(uv.x * VHS_WAVE_FREQ + time * 1.5) * VHS_WAVE_AMPLITUDE;
+
+    // RGB channel misalignment
+    vec3 vhsColor = vec3(
+        texture2D(tex, uv + vec2( VHS_COLOR_SHIFT, 0.0)).r,
+        texture2D(tex, uv).g,
+        texture2D(tex, uv - vec2( VHS_COLOR_SHIFT, 0.0)).b
     );
+
+    // Horizontal noise bands
+    float bandNoise = step(1.0 - VHS_NOISE_BAND_FREQ, random(vec2(time, floor(uv.y * 480.0))));
+    if (bandNoise > 0.5) {
+        float noise = (random(uv * time) - 0.5) * VHS_NOISE_BAND_STRENGTH;
+        vhsColor += vec3(noise);
+    }
+
+    return mix(originalColor, vhsColor, VHS_INTENSITY);
+#else
+    return originalColor;
+#endif
 }
 
 // --- Drifting Effect ---
@@ -268,14 +283,10 @@ vec2 applyDrift(vec2 uv, float time) {
 // --- CRT Buzz Vibration ---
 vec2 applyCRTVibration(vec2 uv, float time) {
 #if DEBUG_VIBRATION
-    // Base sine buzz
     float buzz = sin(time * VIBRATION_BASE_FREQ) * VIBRATION_AMPLITUDE;
-
-    // Add subtle noise modulation (random jitter per scanline)
     float line = floor(uv.y * 480.0);
     float noise = (random(vec2(line, time * VIBRATION_NOISE_FREQ)) - 0.5) 
                   * VIBRATION_AMPLITUDE * VIBRATION_NOISE_STRENGTH;
-
     uv.y += buzz + noise;
 #endif
     return uv;
@@ -284,29 +295,20 @@ vec2 applyCRTVibration(vec2 uv, float time) {
 // --- Analog-Style Glitch Effect (Bouncy) ---
 vec3 applyAnalogGlitch(vec2 uv, float time, vec3 color, float isActive, float tInInterval) {
     if (isActive < 0.5) return color;
-
-    // Bounce easing (0 → 1 → 0 within duration)
     float bounce = sin(tInInterval * GLITCH_SPEED * PI);
     float strength = GLITCH_STRENGTH * bounce;
-
-    // Horizontal tearing (line offset)
     float line = floor(uv.y * 480.0);
     float lineNoise = random(vec2(line, time));
     float tearStrength = step(0.985, lineNoise) * 0.02 * strength;
     uv.x += tearStrength * (random(vec2(lineNoise, time)) - 0.5);
-
-    // Wavy distortion
     float wave = sin(uv.y * 40.0 + time * 6.0) * 0.002 * strength;
     uv.x += wave;
-
-    // Subtle RGB misalignment
     float shift = 0.0015 * sin(time * 2.0 + uv.y * 10.0) * strength;
     vec3 analogColor = vec3(
         texture2D(tex, uv + vec2( shift, 0.0)).r,
         texture2D(tex, uv).g,
         texture2D(tex, uv - vec2( shift, 0.0)).b
     );
-
     return mix(color, analogColor, strength);
 }
 
@@ -370,7 +372,7 @@ void main() {
     #endif
 
     #if DEBUG_VHS_OVERLAY
-        color = applyVHSOverlay(processedUV, time, color);
+        color = applyVHSEffect(processedUV, time, color);
     #endif
 
     #if DEBUG_GRAIN
