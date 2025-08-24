@@ -19,7 +19,7 @@ uniform float time;
 #define DEBUG_GLITCH   1       // Toggle glitch effect
 #define DEBUG_DRIFT    0       // Toggle drifting effect
 #define DEBUG_COLOR_TEMP 0     // Toggle color temperature adjustment
-#define DEBUG_VIBRATION 0      // Toggle vertical vibration effect
+#define DEBUG_VIBRATION 1      // Toggle CRT buzz vibration effect
 #define DEBUG_GRAIN     1      // Toggle cinematic grain effect
 
 // [Effect Parameters]
@@ -36,7 +36,7 @@ uniform float time;
 #define GLITCH_STRENGTH        1.0
 #define GLITCH_PROBABILITY     0.20
 #define GLITCH_INTERVAL        3.0
-#define GLITCH_DURATION        0.08   // at least 120ms
+#define GLITCH_DURATION        0.12   // at least 120ms
 #define GLITCH_SPEED           64.0   // configurable bounce speed
 
 // Vignette Parameters
@@ -71,9 +71,11 @@ uniform float time;
 #define DRIFT_FREQUENCY 1.2
 #define DRIFT_DIRECTION vec2(1.0, 0.5)
 
-// Vibration Parameters
-#define VIBRATION_AMPLITUDE 0.0004
-#define VIBRATION_FREQUENCY 80.0
+// CRT Buzz Vibration Parameters
+#define VIBRATION_AMPLITUDE 0.0006
+#define VIBRATION_BASE_FREQ 75.0
+#define VIBRATION_NOISE_FREQ 120.0
+#define VIBRATION_NOISE_STRENGTH 0.4
 
 // Color Settings
 #define COLOR_DEPTH 16
@@ -263,6 +265,22 @@ vec2 applyDrift(vec2 uv, float time) {
     return uv + driftOffset;
 }
 
+// --- CRT Buzz Vibration ---
+vec2 applyCRTVibration(vec2 uv, float time) {
+#if DEBUG_VIBRATION
+    // Base sine buzz
+    float buzz = sin(time * VIBRATION_BASE_FREQ) * VIBRATION_AMPLITUDE;
+
+    // Add subtle noise modulation (random jitter per scanline)
+    float line = floor(uv.y * 480.0);
+    float noise = (random(vec2(line, time * VIBRATION_NOISE_FREQ)) - 0.5) 
+                  * VIBRATION_AMPLITUDE * VIBRATION_NOISE_STRENGTH;
+
+    uv.y += buzz + noise;
+#endif
+    return uv;
+}
+
 // --- Analog-Style Glitch Effect (Bouncy) ---
 vec3 applyAnalogGlitch(vec2 uv, float time, vec3 color, float isActive, float tInInterval) {
     if (isActive < 0.5) return color;
@@ -308,7 +326,7 @@ void main() {
         processedUV = applyDrift(processedUV, time);
     #endif
     #if DEBUG_VIBRATION
-        processedUV.y += sin(time * VIBRATION_FREQUENCY) * VIBRATION_AMPLITUDE;
+        processedUV = applyCRTVibration(processedUV, time);
     #endif
 
     processedUV = pixelate(processedUV);
