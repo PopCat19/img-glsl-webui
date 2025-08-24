@@ -11,97 +11,97 @@ uniform float time;
 // [Debug Toggles]
 #define DEBUG_CA       1       // Toggle chromatic aberration effect
 #define DEBUG_BLOOM    1       // Toggle bloom effect
-#define DEBUG_VIGNETTE 0       // Toggle vignette effect
-#define DEBUG_PIXEL   0       // Toggle pixelation effect
+#define DEBUG_VIGNETTE 1       // Toggle vignette effect
+#define DEBUG_PIXEL    0       // Toggle pixelation effect
 #define COLOR_DEPTH_ENABLED 0  // Enable color depth reduction
 #define DEBUG_SCANLINE 0       // Toggle scanline effect
-#define DEBUG_VHS_OVERLAY 1    // Toggle VHS double overlay effect
+#define DEBUG_VHS_OVERLAY 0    // Toggle VHS double overlay effect
 #define DEBUG_GLITCH   1       // Toggle glitch effect
 #define DEBUG_DRIFT    1       // Toggle drifting effect
 #define DEBUG_COLOR_TEMP 1     // Toggle color temperature adjustment
 #define DEBUG_VIBRATION 1      // Toggle vertical vibration effect
-#define DEBUG_BITRATE   0       // Toggle bitrate compression artifacts
+#define DEBUG_BITRATE   0      // Toggle bitrate compression artifacts
 
 // [Effect Parameters]
 // Bloom Parameters
-#define BLOOM_INTENSITY       0.5     // Overall strength of bloom effect (0.0-1.0)
-#define BLOOM_RADIUS          0.006    // Spread radius of bloom effect in texture coordinates
-#define BLOOM_SAMPLES         64    // Number of sampling points (quality vs performance)
-#define BLOOM_TINT           vec3(1.1, 0.9, 0.9) // RGB color multiplier for bloom
-#define BLOOM_THRESHOLD       0.0     // Minimum brightness to trigger bloom (linear color space)
-#define BLOOM_SOFT_THRESHOLD  1.0     // Smooth transition range for threshold (knee width)
-#define BLOOM_FALLOFF_CURVE   32.0     // Controls bloom spread intensity (higher = faster falloff)
+#define BLOOM_INTENSITY       0.24
+#define BLOOM_RADIUS          0.006
+#define BLOOM_SAMPLES         64
+#define BLOOM_TINT            vec3(1.1, 0.9, 0.9)
+#define BLOOM_THRESHOLD       0.0
+#define BLOOM_SOFT_THRESHOLD  1.0
+#define BLOOM_FALLOFF_CURVE   32.0
 
 // Glitch Parameters
-#define GLITCH_STRENGTH        0.1    // Intensity of glitch displacement
-#define GLITCH_PROBABILITY     0.1    // Chance of occurring per interval (0.0-1.0)
-#define GLITCH_X_VIBRATION_PROBABILITY 0.6 // Separate probability for X vibration
-#define GLITCH_INTERVAL        3.0    // Time between glitch attempts (seconds)
-#define GLITCH_DURATION        0.1    // Duration of each glitch burst (seconds)
-#define GLITCH_BLOCK_SIZE      8.0    // Size of glitch blocks in pixels
-#define GLITCH_DISPLACEMENT    0.01   // Maximum horizontal displacement
-#define GLITCH_COLOR_SHIFT     0.0    // RGB channel separation strength
-#define GLITCH_BLOCK_PROBABILITY 0.3  // Chance for individual blocks to glitch
-#define GLITCH_X_VIBRATION_AMPLITUDE 0.006 // Strength of X-axis vibration during glitch
+#define GLITCH_STRENGTH        0.1
+#define GLITCH_PROBABILITY     0.1
+#define GLITCH_X_VIBRATION_PROBABILITY 0.6
+#define GLITCH_INTERVAL        3.0
+#define GLITCH_DURATION        0.1
+#define GLITCH_BLOCK_SIZE      8.0
+#define GLITCH_DISPLACEMENT    0.01
+#define GLITCH_COLOR_SHIFT     0.0
+#define GLITCH_BLOCK_PROBABILITY 0.3
+#define GLITCH_X_VIBRATION_AMPLITUDE 0.006
 
 // Vignette Parameters
-#define VIGNETTE_STRENGTH      0.4    // Darkness intensity at edges (0.0-1.0)
-#define VIGNETTE_RADIUS        1.6    // Starting position from center (higher = smaller vignette)
-#define VIGNETTE_SMOOTHNESS    0.8    // Edge transition smoothness (0.0-1.0)
-#define VIGNETTE_ASPECT       vec2(1.0, 1.0) // Aspect ratio correction (affects vignette shape & pixelation grid)
-#define VIGNETTE_COLOR        vec3(0.0, 0.0, 0.0) // Custom color for tint mode (RGB)
-#define VIGNETTE_OFFSET       vec2(0.0, 0.0) // Center position offset (uv coordinates)
-#define VIGNETTE_EXPONENT     1.0     // Non-linear falloff curve (1.0 = linear)
-#define VIGNETTE_MODE         0       // 0 = Darkness only, 1 = Color tint + Darkness
+#define VIGNETTE_STRENGTH      0.4
+#define VIGNETTE_RADIUS        1.6
+#define VIGNETTE_SMOOTHNESS    0.8
+#define VIGNETTE_ASPECT        vec2(1.0, 1.0)
+#define VIGNETTE_COLOR         vec3(0.0, 0.0, 0.0)
+#define VIGNETTE_OFFSET        vec2(0.0, 0.0)
+#define VIGNETTE_EXPONENT      1.0
+#define VIGNETTE_MODE          0
 
 // Chromatic Aberration Parameters
-#define CA_RED_STRENGTH     0.001 // Red channel displacement strength
-#define CA_BLUE_STRENGTH    0.001 // Blue channel displacement strength
-#define CA_FALLOFF          1.0   // Global displacement scale multiplier
-#define CA_ANGLE            0.0   // Displacement direction in radians
-#define CA_FALLOFF_EXPONENT 1.0   // Edge effect curvature (higher = sharper transition)
-#define CA_CENTER_STRENGTH  3.0   // Base effect strength at center (0.0-1.0+)
+#define CA_RED_STRENGTH     0.001
+#define CA_BLUE_STRENGTH    0.001
+#define CA_FALLOFF          1.0
+#define CA_ANGLE            0.0
+#define CA_FALLOFF_EXPONENT 1.0
+#define CA_CENTER_STRENGTH  3.0
 
 // Scanline Parameters
-#define SCANLINE_OPACITY     0.2    // Opacity of black lines (0.0 transparent - 1.0 fully black)
-#define SCANLINE_FREQUENCY   1.0    // Number of scanlines
-#define SCANLINE_SPEED       -1.0   // Animation speed
-#define SCANLINE_THICKNESS   0.2    // Line thickness control
+#define SCANLINE_OPACITY     0.2
+#define SCANLINE_FREQUENCY   1.0
+#define SCANLINE_SPEED       -1.0
+#define SCANLINE_THICKNESS   0.2
 
 // Drifting Effect Parameters
-#define DRIFT_MODE 1           // Drift mode: 0 = Radial, 1 = Radial2, 2 = Linear
-#define DRIFT_SPEED -1.6        // Speed of the drifting effect
-#define DRIFT_RADIUS 0.002     // Radius of the circular drift (for radial mode)
-#define DRIFT_AMPLITUDE 0.002  // Amplitude of the radial2 drift (for radial2 mode)
-#define DRIFT_FREQUENCY 1.2    // Frequency of the radial2 drift (for radial2 mode)
-#define DRIFT_DIRECTION vec2(1.0, 0.5) // Direction of the linear drift (for linear mode)
+#define DRIFT_MODE 1
+#define DRIFT_SPEED -1.6
+#define DRIFT_RADIUS 0.002
+#define DRIFT_AMPLITUDE 0.002
+#define DRIFT_FREQUENCY 1.2
+#define DRIFT_DIRECTION vec2(1.0, 0.5)
 
 // Vibration Parameters
-#define VIBRATION_AMPLITUDE 0.0004 // Strength of vertical vibration
-#define VIBRATION_FREQUENCY 80.0  // Speed of vibration
+#define VIBRATION_AMPLITUDE 0.0004
+#define VIBRATION_FREQUENCY 80.0
 
 // Color Settings
-#define COLOR_DEPTH 16         // Bit depth reducation: 8, 16, or 24
-const float COLOR_TEMPERATURE = 4000.0; // White balance in Kelvin (1000-40000)
-const float COLOR_TEMPERATURE_STRENGTH = 1.0; // Color temperature mix strength (0.0-1.0)
+#define COLOR_DEPTH 16         // Bit depth reduction: 8, 16, or 24
+const float COLOR_TEMPERATURE = 4000.0;
+const float COLOR_TEMPERATURE_STRENGTH = 1.0;
 
 // Pixelation Effect
-#define PIXEL_GRID_SIZE 960.0   // Vertical resolution in pixels (higher = finer details, set aspect ratio via VIGNETTE_ASPECT)
+#define PIXEL_GRID_SIZE 360.0
 
 // VHS Overlay Parameters
-#define VHS_OVERLAY_INTENSITY  0.3    // Strength of overlay effect (0.0-1.0)
-#define VHS_OVERLAY_OFFSET     vec2(0.005, -0.003) // Base displacement vector
-#define VHS_OVERLAY_SPEED      0.3    // Animation speed for displacement
-#define VHS_OVERLAY_TINT_RGB   vec3(1.5, 0.8, 1.2) // Color tint for overlay
-#define VHS_OVERLAY_NOISE_SCALE 512.0  // Noise pattern scale
-#define VHS_OVERLAY_FREQ       0.3    // Wave frequency for pulsation effect
-#define VHS_OVERLAY_DISPLACEMENT_SCALE 0.333 // Scaling factor for displacement
-#define VHS_OVERLAY_WAVE_AMPLITUDE 0.1 // Amplitude of the pulsation wave
+#define VHS_OVERLAY_INTENSITY  0.3
+#define VHS_OVERLAY_OFFSET     vec2(0.005, -0.003)
+#define VHS_OVERLAY_SPEED      0.3
+#define VHS_OVERLAY_TINT_RGB   vec3(1.5, 0.8, 1.2)
+#define VHS_OVERLAY_NOISE_SCALE 512.0
+#define VHS_OVERLAY_FREQ       0.3
+#define VHS_OVERLAY_DISPLACEMENT_SCALE 0.333
+#define VHS_OVERLAY_WAVE_AMPLITUDE 0.1
 
 // Bitrate Compression Artifact Parameters
-#define BITRATE_BLOCK_SIZE    256.0    // Size of compression blocks in pixels
-#define BITRATE_STRENGTH       1.0    // Strength of compression artifacts (0.0-1.0)
-#define BITRATE_NOISE_AMOUNT   0.1    // Amount of block edge noise (0.0-1.0)
+#define BITRATE_BLOCK_SIZE    256.0
+#define BITRATE_STRENGTH       1.0
+#define BITRATE_NOISE_AMOUNT   0.1
 
 const float PI = 3.14159265359;
 
@@ -114,13 +114,19 @@ float random(vec2 st) {
 vec3 applyColorDepthReduction(vec3 color) {
 #if COLOR_DEPTH_ENABLED
     ivec3 bits;
-    if(COLOR_DEPTH == 8) {
+    if (COLOR_DEPTH == 8) {
+        // RGB332
         bits = ivec3(3, 3, 2);
-    } else if(COLOR_DEPTH == 16) {
+    } else if (COLOR_DEPTH == 16) {
+        // RGB565
         bits = ivec3(5, 6, 5);
+    } else if (COLOR_DEPTH == 24) {
+        // RGB888 (true 24-bit color)
+        bits = ivec3(8, 8, 8);
     } else {
-        return color;
+        return color; // fallback
     }
+
     vec3 maxValues = pow(vec3(2.0), vec3(bits)) - 1.0;
     return floor(color * maxValues + 0.5) / maxValues;
 #else
@@ -131,7 +137,6 @@ vec3 applyColorDepthReduction(vec3 color) {
 // --- Pixelation Effect ---
 vec2 pixelate(vec2 uv) {
 #if DEBUG_PIXEL
-    // Correct aspect ratio adjustment using VIGNETTE_ASPECT
     vec2 grid = vec2(PIXEL_GRID_SIZE, PIXEL_GRID_SIZE * (VIGNETTE_ASPECT.y / VIGNETTE_ASPECT.x));
     vec2 pixelUV = floor(uv * grid) / grid;
     return pixelUV;
@@ -142,7 +147,6 @@ vec2 pixelate(vec2 uv) {
 
 vec3 applyPixelGrid(vec2 uv, vec3 color) {
 #if DEBUG_PIXEL
-    // Match grid calculation with pixelate function for consistent aspect ratio
     vec2 grid = vec2(PIXEL_GRID_SIZE, PIXEL_GRID_SIZE * (VIGNETTE_ASPECT.y / VIGNETTE_ASPECT.x));
     vec2 pixelCoord = uv * grid;
     vec2 gridLine = smoothstep(0.95, 0.99, fract(pixelCoord));
@@ -156,10 +160,7 @@ vec3 applyPixelGrid(vec2 uv, vec3 color) {
 // --- Bitrate Compression Artifacts ---
 vec3 applyBitrateCompression(vec2 uv, vec3 color) {
 #if DEBUG_BITRATE
-    // Calculate block position
     vec2 blockUV = floor(uv * BITRATE_BLOCK_SIZE) / BITRATE_BLOCK_SIZE;
-
-    // Calculate average color for the block
     vec3 avgColor = vec3(0.0);
     for(float x = 0.0; x < 1.0; x += 0.25) {
         for(float y = 0.0; y < 1.0; y += 0.25) {
@@ -168,11 +169,8 @@ vec3 applyBitrateCompression(vec2 uv, vec3 color) {
         }
     }
     avgColor /= 16.0;
-
-    // Add noise to block edges
     float noise = random(blockUV * BITRATE_BLOCK_SIZE) * BITRATE_NOISE_AMOUNT;
     avgColor *= 1.0 + noise * BITRATE_STRENGTH;
-
     return mix(color, avgColor, BITRATE_STRENGTH);
 #else
     return color;
