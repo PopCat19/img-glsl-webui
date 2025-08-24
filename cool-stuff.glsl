@@ -72,7 +72,7 @@ uniform float time;
 #define DRIFT_DIRECTION vec2(1.0, 0.5)
 
 // CRT Buzz Vibration Parameters
-#define VIBRATION_AMPLITUDE 0.0006
+#define VIBRATION_AMPLITUDE 0.0004
 #define VIBRATION_BASE_FREQ 75.0
 #define VIBRATION_NOISE_FREQ 120.0
 #define VIBRATION_NOISE_STRENGTH 0.4
